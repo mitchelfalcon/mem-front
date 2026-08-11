@@ -1,0 +1,199 @@
+@import "./styles/fonts.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", Roboto, "Helvetica Neue", sans-serif;
+  --font-display: "Segoe UI", -apple-system, BlinkMacSystemFont, "Segoe UI Web (West European)", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    /* Emerald Neo-Futuristic Palette */
+    --emerald-primary: #10b981;
+    --emerald-dark: #059669;
+    --emerald-light: #34d399;
+    --emerald-glow: rgba(16, 185, 129, 0.3);
+    
+    /* Glassmorphism System */
+    --glass-bg: rgba(255, 255, 255, 0.05); /* Adjusted for dark mode default */
+    --glass-bg-strong: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: rgba(16, 185, 129, 0.05);
+    
+    /* Dark Accents */
+    --bg: #020617;
+    --fg: #cbd5e1;
+    --border: rgba(16, 185, 129, 0.1);
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-emerald-200;
+  }
+
+  .glass {
+    @apply backdrop-blur-md border border-white/10 shadow-lg shadow-emerald-500/5 bg-white/5;
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-xl border border-white/20 shadow-xl shadow-emerald-500/10 bg-white/10;
+  }
+
+  .btn-neo {
+    @apply bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-600/20 active:scale-95 border border-emerald-400/20;
+  }
+
+  .emerald-glow {
+    @apply drop-shadow-[0_0_10px_rgba(16,185,129,0.3)];
+  }
+
+  .emerald-pulse {
+    animation: emeraldPulse 3s ease-in-out infinite;
+  }
+
+  .float-animation {
+    animation: floatSlow 6s ease-in-out infinite;
+  }
+
+  .label-xs {
+    @apply text-[10px] uppercase tracking-[0.2em] font-bold text-emerald-500/60;
+  }
+
+  .mono-tag {
+    @apply font-mono text-[10px] px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-400 uppercase font-bold bg-emerald-500/5;
+  }
+
+  .status-dot {
+    @apply w-1.5 h-1.5 rounded-full inline-block;
+  }
+}
+
+@keyframes emeraldPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #020617;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+@keyframes borderShimmer {
+  0%, 100% {
+    border-color: rgba(37, 99, 235, 0.3);
+    box-shadow: 0 0 10px rgba(37, 99, 235, 0.06), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+  }
+  50% {
+    border-color: rgba(37, 99, 235, 0.7);
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  }
+}
+
+.border-shimmer {
+  animation: borderShimmer 4s infinite ease-in-out;
+}
+
+/* =========================================================
+   UI ARQUITECTURA: TARJETA NEUMÓRFICA / GLASSMORPHISM
+   Optimizado para LWC y Aceleración GPU
+========================================================= */
+
+.metric-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03); /* Translucidez base profunda */
+    backdrop-filter: blur(16px); /* Efecto de cristal esmerilado */
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    padding: 24px;
+    /* Borde base casi invisible para mantener la estructura */
+    border: 1px solid rgba(255, 255, 255, 0.05); 
+    overflow: hidden;
+    cursor: pointer;
+    /* Transición suave para la elevación física */
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); /* Sombra de reposo */
+}
+
+/* 
+   El "Borde Iluminado" y "Gradiente en Movimiento"
+   Usamos un pseudo-elemento con máscara para no afectar el contenido interno.
+*/
+.metric-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: 16px;
+    padding: 2px; /* Controla el grosor del borde iluminado */
+    
+    /* Paleta Retro-Futurista: Cyan, Magenta, Púrpura profundo */
+    background: linear-gradient(90deg, #00f0ff, #ff007f, #7000ff, #00f0ff);
+    background-size: 300% 300%;
+    
+    /* Técnicas de enmascaramiento para que el gradiente SOLO afecte el borde */
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+    
+    opacity: 0; /* Apagado por defecto */
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+/* =========================================================
+   ESTADO DE INTERACCIÓN (HOVER / FOCUS)
+========================================================= */
+
+.metric-card:hover {
+    /* Elevación física en el eje Y */
+    transform: translateY(-6px);
+    /* Sombra de resplandor detrás de la tarjeta */
+    box-shadow: 0 20px 40px rgba(112, 0, 255, 0.25), 
+                0 0 20px rgba(0, 240, 255, 0.15); 
+}
+
+.metric-card:hover::before {
+    opacity: 1; /* Enciende la orilla */
+    /* Detona el gradiente en movimiento interactivo */
+    animation: gradientFlow 3s ease infinite; 
+}
+
+/* Animación optimizada para GPU modificando background-position */
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+

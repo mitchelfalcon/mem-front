@@ -1,0 +1,6 @@
+{
+  "name": "ALRO SUPREME v4.0",
+  "description": "Arquitectura Agéntica Anti-Workslop para Salesforce Agentforce. Dashboards técnicos, razonamiento ToT y equivalencia funcional con Copiloto Inteligente.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
