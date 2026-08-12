@@ -97,18 +97,22 @@ export function Home() {
             <motion.div {...enter(0.1)} className="w-[min(40vw,340px)]">
               <CalendarCard />
             </motion.div>
+
+            {/* DOCTORES EN TURNO pill — below the cards */}
+            <motion.div {...enter(0.15)} className="w-full">
+              <button className="inline-flex items-center gap-3 rounded-full bg-mem-lime px-6 py-2.5 text-sm font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-mem-ink/80 text-[10px] text-mem-lime">✦</span>
+                Doctores en turno
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </motion.div>
           </div>
 
-          {/* Left (raised): DOCTORES EN TURNO pill + doctor avatars — raised so Reset & Relax no longer overlaps it */}
+          {/* Bottom-left: doctor avatars (2x bigger) */}
           <motion.div
             {...enter(0.2)}
-            className="absolute left-[128px] top-[47%] w-[min(52vw,720px)]"
+            className="absolute bottom-6 left-[128px] w-[min(80vw,1440px)]"
           >
-            <button className="mb-3 inline-flex items-center gap-3 rounded-full bg-mem-lime px-6 py-2.5 text-sm font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-mem-ink/80 text-[10px] text-mem-lime">✦</span>
-              Doctores en turno
-              <ChevronRight className="h-5 w-5" />
-            </button>
             <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
           </motion.div>
 
