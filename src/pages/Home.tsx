@@ -44,11 +44,10 @@ export function Home() {
 
         {/* Symmetric 50/50 split — no absolute positioning, so no overlaps */}
         <div className="grid h-full w-full grid-cols-1 gap-6 overflow-y-auto p-6 pl-[128px] lg:grid-cols-2">
-          {/* ── LEFT column: cards + pill + doctor avatars ── */}
+          {/* ── LEFT column: doctor card -> calendar -> pill -> doctor avatars (stacked) ── */}
           <div className="flex min-w-0 flex-col items-start gap-4">
-            <div className="flex w-full items-stretch gap-4">
               {/* Doctor card */}
-              <motion.div {...enter(0)} className="min-w-0 flex-1">
+              <motion.div {...enter(0)} className="w-[min(90%,340px)]">
                 <div
                   className="relative h-full overflow-hidden rounded-3xl border border-white/70 p-4 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
                   style={{ background: CARD_GRADIENT }}
@@ -95,11 +94,10 @@ export function Home() {
                 </div>
               </motion.div>
 
-              {/* Calendar — same size as the doctor card */}
-              <motion.div {...enter(0.1)} className="min-w-0 flex-1">
-                <CalendarCard />
-              </motion.div>
-            </div>
+            {/* Calendar — below the doctor card (same size) */}
+            <motion.div {...enter(0.1)} className="w-[min(90%,340px)]">
+              <CalendarCard />
+            </motion.div>
 
             {/* DOCTORES EN TURNO pill — below the cards */}
             <motion.div {...enter(0.15)}>
@@ -122,7 +120,7 @@ export function Home() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="relative w-[min(100%,440px)]"
+              className="relative w-[min(100%,880px)]"
             >
               <img
                 src={resetRelax}
