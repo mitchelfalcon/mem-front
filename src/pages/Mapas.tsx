@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Menu, ChevronDown, ShieldAlert, Download, Boxes, Thermometer, MapPin } from "lucide-react";
+import { Menu, ChevronDown, ShieldAlert, Download, Boxes, Thermometer, MapPin, FileText } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
 import { VideoStage } from "../components/mem/VideoStage";
 
@@ -46,6 +46,28 @@ export function Mapas() {
         className="border border-white/70 shadow-[0_20px_50px_rgba(37,99,235,0.18)]"
       >
         {/* Layered: background image -> video -> overlays positioned on top */}
+
+        {/* Clinic Visit Appointment card (Figma) */}
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="absolute left-6 top-6 z-10 w-52 rounded-2xl bg-gradient-to-br from-[#0a1f4d] to-[#123a7a] p-4 shadow-xl"
+        >
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mem-lime">
+              <FileText className="h-3.5 w-3.5 text-mem-ink" />
+            </span>
+            <span className="text-[11px] font-medium text-slate-300">31 May '26</span>
+          </div>
+          <p className="text-base font-extrabold leading-tight text-white">Clinic Visit Appointment</p>
+          <div className="mt-4 flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-mem-blue to-mem-purple text-[10px] font-bold text-white">
+              SR
+            </span>
+            <span className="text-xs font-medium text-slate-200">Dr. Shilpa Rao</span>
+          </div>
+        </motion.div>
 
         {/* PROTOCOLOS ACTIVADOS card */}
         <motion.div

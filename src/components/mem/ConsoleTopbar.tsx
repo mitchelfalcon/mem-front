@@ -27,8 +27,8 @@ export function ConsoleTopbar() {
         <span className="mem-brand text-2xl leading-none">MEM</span>
 
         <div className="flex items-center gap-2 pl-2">
-          <Grid3x3 className="h-4 w-4 text-[#2563eb]" />
-          <span className="text-sm font-bold text-[#2563eb]">MEM Healthcare</span>
+          <Grid3x3 className="h-4 w-4 text-mem-blue" />
+          <span className="text-sm font-bold text-mem-blue">MEM Healthcare</span>
         </div>
 
         <nav className="mx-3 hidden flex-1 items-center gap-1 overflow-x-auto lg:flex">
@@ -46,7 +46,7 @@ export function ConsoleTopbar() {
               {tab}
               {!NO_CHEVRON.has(tab) && <ChevronDown className="h-3 w-3 opacity-60" />}
               {active === tab && (
-                <span className="absolute -bottom-[10px] left-2 right-2 h-[3px] rounded-full bg-[#2563eb]" />
+                <span className="absolute -bottom-[10px] left-2 right-2 h-[3px] rounded-full bg-mem-blue" />
               )}
             </button>
           ))}

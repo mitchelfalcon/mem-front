@@ -2,15 +2,22 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-display: "Exo 2", "Inter", sans-serif;
+  /* Typography — Figma design system: Segoe UI body, 13/20 base */
+  --font-sans: "Segoe UI", -apple-system, BlinkMacSystemFont, "Inter", Roboto, "Helvetica Neue", sans-serif;
+  --font-display: "Exo 2", "Segoe UI", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-mem-navy: #0b1e45;
-  --color-mem-navy-2: #0a1838;
-  --color-mem-blue: #2563eb;
-  --color-mem-blue-2: #1d4ed8;
-  --color-mem-purple: #7c3aed;
+  /* Color tokens mapped from Figma variables */
+  --color-mem-navy: #0a1f4d; /* sidebar / dark surfaces */
+  --color-mem-navy-2: #071634;
+  --color-mem-blue: #007ade; /* Light/Primary/Main */
+  --color-mem-blue-2: #0064ba;
+  --color-mem-purple: #6d3bf5;
+  --color-mem-ink: #080707; /* Text / Default */
+  --color-mem-gray: #545454; /* Black 30/400 */
+  --color-mem-gray-2: #ababab; /* Light/Text/Medium */
+  --color-mem-icon: #706e6b; /* 10 - Icon / Default */
+  --color-mem-lime: #d7f24a; /* "Doctores en turno" highlight pill */
   --color-mem-bg: #e9edfb;
 }
 
@@ -61,8 +68,8 @@
   /* Primary blue -> purple gradient button (Figma "Quick Summary") */
   .btn-mem {
     @apply inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white transition-all active:scale-95;
-    background: linear-gradient(90deg, #2f6bf6, #7c3aed);
-    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+    background: linear-gradient(90deg, #007ade, #6d3bf5);
+    box-shadow: 0 8px 20px rgba(0, 122, 222, 0.32);
   }
   .btn-mem:hover {
     filter: brightness(1.06);

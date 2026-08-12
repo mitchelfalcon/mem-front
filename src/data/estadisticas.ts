@@ -71,8 +71,25 @@ export interface ZoneShare {
 }
 
 export const ZONE_SHARE: ZoneShare[] = [
-  { zona: "Zona Sur", valor: 38, color: "#2563eb" },
-  { zona: "Zona Norte", valor: 27, color: "#7c3aed" },
+  { zona: "Zona Sur", valor: 38, color: "#007ade" },
+  { zona: "Zona Norte", valor: 27, color: "#6d3bf5" },
   { zona: "Zona Centro", valor: 22, color: "#4f46e5" },
   { zona: "Zona Golfo", valor: 13, color: "#10b981" },
+];
+
+/** Patient visits table (echoes the Figma analytics dashboard). */
+export interface PatientVisit {
+  id: string;
+  name: string;
+  initials: string;
+  reason: string;
+  status: "Estable" | "En revisión" | "Crítico";
+  time: string;
+}
+
+export const PATIENT_VISITS: PatientVisit[] = [
+  { id: "P-9981", name: "Hanah Brown", initials: "HB", reason: "Telemetría cardíaca", status: "Estable", time: "09:20" },
+  { id: "P-9982", name: "Luis Ramírez", initials: "LR", reason: "Control post-op", status: "En revisión", time: "10:05" },
+  { id: "P-9983", name: "Shilpa Rao", initials: "SR", reason: "Consulta general", status: "Estable", time: "10:40" },
+  { id: "P-9984", name: "Marco Díaz", initials: "MD", reason: "Urgencia respiratoria", status: "Crítico", time: "11:15" },
 ];

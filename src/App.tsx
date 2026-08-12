@@ -62,7 +62,7 @@ export default function App() {
                 {page === id && (
                   <span
                     className="absolute inset-0 -z-10 rounded-full"
-                    style={{ background: "linear-gradient(90deg,#2f6bf6,#7c3aed)" }}
+                    style={{ background: "linear-gradient(90deg,#007ade,#6d3bf5)" }}
                   />
                 )}
                 {label}
