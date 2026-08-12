@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { LayoutGrid, Map, FolderClosed, PieChart, Mic } from "lucide-react";
 import { SalesforceCloud } from "./SalesforceCloud";
+import avatar from "../../assets/avatar.png";
 
 export interface SidebarItem {
   id: string;
@@ -59,13 +60,15 @@ export function Sidebar({ active, onSelect, busyId = null }: SidebarProps) {
         })}
       </div>
 
-      {/* Profile avatar */}
+      {/* Profile avatar (mascot) */}
       <button
         type="button"
         title="Perfil"
         aria-label="Perfil"
-        className="h-12 w-12 rounded-full bg-[#1c3a8f] shadow-[0_6px_16px_rgba(0,0,0,0.35)] ring-2 ring-white/10 transition-transform hover:scale-105"
-      />
+        className="h-12 w-12 overflow-hidden rounded-full shadow-[0_6px_16px_rgba(0,0,0,0.35)] ring-2 ring-white/20 transition-transform hover:scale-105"
+      >
+        <img src={avatar} alt="Perfil" className="h-full w-full object-cover" />
+      </button>
     </aside>
   );
 }

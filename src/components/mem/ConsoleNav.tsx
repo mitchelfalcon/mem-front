@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Star, Plus, CloudUpload, HelpCircle, Settings, Bell, ChevronDown } from "lucide-react";
+import avatar from "../../assets/avatar.png";
 
 const TABS = [
   "Home",
@@ -59,7 +60,7 @@ export function ConsoleIcons() {
           <Icon className="h-[18px] w-[18px]" />
         </button>
       ))}
-      <div className="ml-1 h-8 w-8 rounded-full bg-gradient-to-br from-[#0b1e45] to-[#334155] ring-2 ring-white" />
+      <img src={avatar} alt="Perfil" className="ml-1 h-8 w-8 rounded-full object-cover ring-2 ring-white" />
     </div>
   );
 }
