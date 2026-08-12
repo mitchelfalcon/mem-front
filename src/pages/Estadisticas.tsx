@@ -68,7 +68,7 @@ function Panel({
   children: ReactNode;
 }) {
   return (
-    <div className={`card-glass flex flex-col p-4 ${className}`}>
+    <div className={`flex flex-col rounded-2xl border border-white/60 bg-indigo-200/40 p-4 shadow-lg backdrop-blur-md ${className}`}>
       <div className="mb-2">
         <p className="text-sm font-bold text-mem-navy">{title}</p>
         {subtitle && <p className="text-[11px] font-medium text-slate-500">{subtitle}</p>}
@@ -82,16 +82,17 @@ export function Estadisticas() {
   const chartsReady = useDeferredMount();
 
   return (
-    <ConsoleLayout defaultSidebar="analytics">
+    <ConsoleLayout defaultSidebar="analytics" bleed>
       <VideoStage
         videoId="1217019780"
         title="MEM Healthcare — video de fondo (estadísticas)"
+        immersive
         contentClassName="h-full"
       >
-        {/* Legibility scrim between video and widgets */}
-        <div className="absolute inset-0 bg-gradient-to-br from-white/70 via-white/55 to-blue-50/60" />
+        {/* Light legibility scrim — keeps the video visible behind the frosted cards */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/45 via-white/15 to-transparent" />
 
-        <div className="relative h-full overflow-y-auto p-4 sm:p-6">
+        <div className="relative h-full overflow-y-auto p-4 pl-[136px] sm:p-6 sm:pl-[140px]">
           {/* Header */}
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -118,7 +119,7 @@ export function Estadisticas() {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: i * 0.05 }}
-                  className="card-glass p-3"
+                  className="rounded-2xl border border-white/60 bg-indigo-200/40 p-3 shadow-lg backdrop-blur-md"
                 >
                   <div className="mb-2 flex items-center justify-between">
                     <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${tone.bg} ${tone.text}`}>
@@ -240,7 +241,7 @@ export function Estadisticas() {
                   </thead>
                   <tbody>
                     {PATIENT_VISITS.map((p) => (
-                      <tr key={p.id} className="border-t border-slate-100">
+                      <tr key={p.id} className="border-t border-white/40">
                         <td className="px-2 py-2.5">
                           <div className="flex items-center gap-2">
                             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-mem-blue to-mem-purple text-[11px] font-bold text-white">
