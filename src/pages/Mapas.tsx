@@ -100,12 +100,12 @@ export function Mapas() {
         immersive
         contentClassName="h-full"
       >
-        {/* DNA helix (decorative) — over the cards, right side, positioned like the Figma (half size) */}
+        {/* DNA helix (decorative) — over the cards, right side, rotated 90° (vertical) */}
         <img
           src={dnaHelix}
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-[100px] z-30 w-[min(32vw,480px)] select-none opacity-90"
+          className="pointer-events-none absolute right-0 top-[130px] z-30 w-[min(30vw,440px)] rotate-90 select-none opacity-90"
         />
 
         {/* Toolbar */}
