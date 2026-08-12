@@ -2,18 +2,20 @@ import { useEffect, useState } from "react";
 import { Presentation } from "./pages/Presentation";
 import { Home } from "./pages/Home";
 import { Mapas } from "./pages/Mapas";
+import { Estadisticas } from "./pages/Estadisticas";
 
-type PageId = "presentation" | "home" | "mapas";
+type PageId = "presentation" | "home" | "mapas" | "estadisticas";
 
 const NAV: { id: PageId; label: string }[] = [
   { id: "presentation", label: "PRESENTATION" },
   { id: "home", label: "HOME" },
   { id: "mapas", label: "MAPAS" },
+  { id: "estadisticas", label: "ESTADÍSTICAS" },
 ];
 
 function parseHash(): PageId {
   const h = window.location.hash.replace("#/", "").replace("#", "").toLowerCase();
-  if (h === "home" || h === "mapas" || h === "presentation") return h;
+  if (h === "home" || h === "mapas" || h === "presentation" || h === "estadisticas") return h;
   return "presentation";
 }
 
@@ -75,6 +77,7 @@ export default function App() {
         {page === "presentation" && <Presentation />}
         {page === "home" && <Home />}
         {page === "mapas" && <Mapas />}
+        {page === "estadisticas" && <Estadisticas />}
       </div>
     </div>
   );

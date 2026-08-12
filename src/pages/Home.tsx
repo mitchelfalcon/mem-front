@@ -2,7 +2,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, UserPlus, Activity, BellRing, FileText, HeartPulse } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
-import { VimeoEmbed } from "../components/mem/VimeoEmbed";
+import { VideoStage } from "../components/mem/VideoStage";
 
 const QUICK_ACTIONS = [
   { id: "patient", label: "Nuevo Paciente", icon: UserPlus, hint: "Registro clínico creado" },
@@ -112,19 +112,21 @@ export function Home() {
           </div>
         </div>
 
-        {/* Main video card */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/40 shadow-[0_20px_50px_rgba(37,99,235,0.15)]">
-          <VimeoEmbed videoId="1217019780" title="MEM Healthcare — animación de inicio" />
-
+        {/* Main video card — layered: background image -> video -> overlays */}
+        <VideoStage
+          videoId="1217019780"
+          title="MEM Healthcare — animación de inicio"
+          className="self-start border border-white/70 shadow-[0_20px_50px_rgba(37,99,235,0.15)]"
+        >
           {/* MEM Healthcare logo overlay */}
-          <div className="pointer-events-none absolute bottom-4 left-5 z-10 flex items-center gap-2">
+          <div className="pointer-events-none absolute bottom-4 left-5 flex items-center gap-2">
             <span className="mem-brand text-2xl drop-shadow">MEM</span>
             <span className="text-lg font-semibold text-mem-navy/80 drop-shadow">Healthcare</span>
           </div>
 
           {/* Animated EKG sine wave overlay */}
           <svg
-            className="pointer-events-none absolute bottom-0 left-0 z-10 h-16 w-full"
+            className="pointer-events-none absolute bottom-0 left-0 h-16 w-full"
             viewBox="0 0 1000 80"
             preserveAspectRatio="none"
           >
@@ -137,7 +139,7 @@ export function Home() {
               strokeLinecap="round"
             />
           </svg>
-        </div>
+        </VideoStage>
       </div>
     </ConsoleLayout>
   );

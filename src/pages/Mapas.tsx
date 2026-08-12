@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { Menu, ChevronDown, ShieldAlert, Download, Boxes, Thermometer, MapPin } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
-import { VimeoEmbed } from "../components/mem/VimeoEmbed";
+import { VideoStage } from "../components/mem/VideoStage";
 
 function Toolbar() {
   return (
@@ -40,9 +40,12 @@ function Toolbar() {
 export function Mapas() {
   return (
     <ConsoleLayout defaultSidebar="analytics" toolbar={<Toolbar />}>
-      <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-[#bfe0f5] shadow-[0_20px_50px_rgba(37,99,235,0.18)]">
-        {/* Background video (16:9) with overlays positioned on top */}
-        <VimeoEmbed videoId="1217019899" title="MEM Mapas — estados y logística médica" />
+      <VideoStage
+        videoId="1217019899"
+        title="MEM Mapas — estados y logística médica"
+        className="border border-white/70 shadow-[0_20px_50px_rgba(37,99,235,0.18)]"
+      >
+        {/* Layered: background image -> video -> overlays positioned on top */}
 
         {/* PROTOCOLOS ACTIVADOS card */}
         <motion.div
@@ -121,7 +124,7 @@ export function Mapas() {
             </button>
           </div>
         </motion.div>
-      </div>
+      </VideoStage>
     </ConsoleLayout>
   );
 }
