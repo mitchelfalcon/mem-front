@@ -84,7 +84,7 @@ export function Estadisticas() {
   return (
     <ConsoleLayout defaultSidebar="analytics" bleed>
       <VideoStage
-        videoId="1217019780"
+        videoId="1217019861"
         title="MEM Healthcare — video de fondo (estadísticas)"
         immersive
         contentClassName="h-full"
