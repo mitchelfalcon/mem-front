@@ -27,6 +27,8 @@ interface ConsoleLayoutProps {
   defaultSidebar?: string;
   /** Center the main content both horizontally and vertically. */
   centerContent?: boolean;
+  /** Full-bleed mode: remove padding/gaps so the content fills 100% width + full height. */
+  bleed?: boolean;
 }
 
 export function ConsoleLayout({
@@ -34,6 +36,7 @@ export function ConsoleLayout({
   toolbar,
   defaultSidebar = "apps",
   centerContent = false,
+  bleed = false,
 }: ConsoleLayoutProps) {
   const [activeSide, setActiveSide] = useState(defaultSidebar);
   const [toast, setToast] = useState<string | null>(null);
@@ -76,15 +79,26 @@ export function ConsoleLayout({
   );
 
   return (
-    <div className="flex h-full min-h-0 w-full gap-3 py-3 pr-3">
-      <Sidebar active={activeSide} busyId={busyId} onSelect={handleSelect} />
-
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        {toolbar}
-        <main className={`min-h-0 flex-1 ${centerContent ? "flex items-center justify-center" : ""}`}>
-          {children}
-        </main>
-      </div>
+    <div className={`relative flex h-full min-h-0 w-full ${bleed ? "gap-0 p-0" : "gap-3 py-3 pr-3"}`}>
+      {bleed ? (
+        <>
+          {/* Full-bleed: content fills 100% width; sidebar floats over the left edge */}
+          <main className="h-full w-full">{children}</main>
+          <div className="absolute inset-y-0 left-0 z-30">
+            <Sidebar active={activeSide} busyId={busyId} onSelect={handleSelect} />
+          </div>
+        </>
+      ) : (
+        <>
+          <Sidebar active={activeSide} busyId={busyId} onSelect={handleSelect} />
+          <div className="flex min-w-0 flex-1 flex-col gap-3">
+            {toolbar}
+            <main className={`min-h-0 flex-1 ${centerContent ? "flex items-center justify-center" : ""}`}>
+              {children}
+            </main>
+          </div>
+        </>
+      )}
 
       {/* App Launcher popover — functional navigation */}
       <AnimatePresence>
@@ -95,7 +109,7 @@ export function ConsoleLayout({
               initial={{ opacity: 0, scale: 0.95, x: -8 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.95, x: -8 }}
-              className="fixed left-[84px] top-[110px] z-50 w-64 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+              className="fixed left-[150px] top-[120px] z-50 w-64 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
             >
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-mem-gray-2">

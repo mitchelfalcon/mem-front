@@ -21,6 +21,12 @@ interface VideoStageProps {
   children?: ReactNode;
   className?: string;
   contentClassName?: string;
+  /**
+   * Full-bleed immersive mode: the stage fills its parent (100% width + full
+   * height) and the video "covers" the area at any aspect ratio.
+   * Same layering: background image (0) -> video (10) -> overlay (20).
+   */
+  immersive?: boolean;
 }
 
 /**
@@ -39,7 +45,33 @@ export function VideoStage({
   children,
   className = "",
   contentClassName = "",
+  immersive = false,
 }: VideoStageProps) {
+  if (immersive) {
+    return (
+      <div className={`relative h-full w-full overflow-hidden ${className}`}>
+        {/* Layer 1 — background image */}
+        <img
+          src={backgroundSrc}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover"
+          style={{ zIndex: 0 }}
+        />
+        {/* Layer 2 — full-bleed cover video */}
+        <div className="absolute inset-0" style={{ zIndex: 10 }}>
+          <VimeoEmbed videoId={videoId} title={title} cover />
+        </div>
+        {/* Layer 3 — overlay components */}
+        {children != null && (
+          <div className={contentClassName} style={{ position: "absolute", inset: 0, zIndex: 20 }}>
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={className} style={VideoContainerWrapperStyles}>
       {/* Layer 1 — background image */}

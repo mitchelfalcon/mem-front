@@ -51,27 +51,6 @@ export default function App() {
             <span className="text-base font-bold text-mem-navy/80">Healthcare</span>
           </button>
 
-          <div className="flex w-full flex-1 justify-center order-last lg:order-none lg:w-auto">
-            <nav className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/70 bg-white/60 p-1.5 shadow-sm">
-              {NAV.map(({ id, label }) => (
-                <button
-                  key={id}
-                  onClick={() => go(id)}
-                  aria-current={page === id ? "page" : undefined}
-                  className={`nav-pill ${page === id ? "text-white" : "text-slate-600 hover:text-mem-navy"}`}
-                >
-                  {page === id && (
-                    <span
-                      className="absolute inset-0 -z-10 rounded-full"
-                      style={{ background: "linear-gradient(90deg,#007ade,#6d3bf5)" }}
-                    />
-                  )}
-                  {label}
-                </button>
-              ))}
-            </nav>
-          </div>
-
           {isConsole && (
             <div className="ml-auto hidden shrink-0 lg:flex">
               <ConsoleIcons />
@@ -94,6 +73,27 @@ export default function App() {
         {page === "mapas" && <Mapas />}
         {page === "estadisticas" && <Estadisticas />}
       </div>
+
+      {/* Main menu — moved below the right-side content, styled like the Salesforce tabs */}
+      <footer className="sticky bottom-0 z-40 border-t border-white/60 bg-white/80 backdrop-blur-xl">
+        <nav className="flex w-full items-center justify-end gap-1 overflow-x-auto px-4 py-2 sm:px-6">
+          {NAV.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => go(id)}
+              aria-current={page === id ? "page" : undefined}
+              className={`relative whitespace-nowrap rounded-md px-3 py-1 text-[13px] transition-colors ${
+                page === id ? "font-semibold text-mem-navy" : "font-medium text-slate-600 hover:text-mem-navy"
+              }`}
+            >
+              {label}
+              {page === id && (
+                <span className="absolute -bottom-[6px] left-3 right-3 h-[3px] rounded-full bg-mem-blue" />
+              )}
+            </button>
+          ))}
+        </nav>
+      </footer>
     </div>
   );
 }
