@@ -45,7 +45,7 @@ function Actions() {
 
 function Toolbar() {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/70 bg-white/85 px-4 py-3 text-mem-navy shadow-sm backdrop-blur-xl">
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/60 bg-indigo-200/45 px-4 py-3 text-mem-navy shadow-sm backdrop-blur-md">
       <div className="flex items-center gap-2 pr-1">
         <div className="leading-tight">
           <p className="text-[11px] font-semibold uppercase text-slate-400">Interval</p>
@@ -125,8 +125,8 @@ export function Mapas() {
           transition={{ duration: 0.4, delay: 0.1 }}
           className="absolute left-[144px] top-[102px] z-20"
         >
-          <span className="inline-flex items-center gap-2 rounded-full bg-white/85 px-4 py-1.5 text-sm font-bold text-mem-navy shadow-sm backdrop-blur">
-            <span className="text-slate-400">1.</span> MEDICACION TOP
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-indigo-200/50 px-4 py-1.5 text-sm font-bold text-mem-navy shadow-sm backdrop-blur-md">
+            <span className="text-slate-500">1.</span> MEDICACION TOP
             <span className="font-medium text-slate-400">3.6 Mb</span>
           </span>
         </motion.div>
@@ -136,7 +136,7 @@ export function Mapas() {
           initial={{ opacity: 0, x: -16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.45, delay: 0.15 }}
-          className="absolute left-[144px] top-[146px] z-20 flex w-[400px] items-center gap-3 rounded-2xl border border-white/60 bg-white/85 p-4 shadow-md backdrop-blur"
+          className="absolute left-[144px] top-[146px] z-20 flex w-[400px] items-center gap-3 rounded-2xl border border-white/60 bg-indigo-200/40 p-4 shadow-md backdrop-blur-md"
         >
           <div className="flex-1 space-y-2">
             {MEDS.map((m) => (
@@ -162,7 +162,7 @@ export function Mapas() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.2 }}
-          className="absolute left-[144px] top-[420px] z-20 w-80 rounded-2xl bg-gradient-to-br from-[#0a1f4d] to-[#123a7a] p-6 shadow-xl"
+          className="absolute left-[144px] top-[420px] z-20 w-80 rounded-2xl border border-white/20 bg-gradient-to-br from-[#0a1f4d]/55 to-[#123a7a]/55 p-6 shadow-xl backdrop-blur-md"
         >
           <div className="mb-4 flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-mem-lime">
@@ -186,8 +186,8 @@ export function Mapas() {
           transition={{ duration: 0.45, delay: 0.3 }}
           className="absolute left-1/2 top-[150px] z-20 -translate-x-1/2"
         >
-          <span className="inline-flex items-center gap-3 rounded-full bg-white/90 px-4 py-2.5 text-base font-bold text-mem-navy shadow-md">
-            <span className="text-slate-400">1.</span>
+          <span className="inline-flex items-center gap-3 rounded-full border border-white/60 bg-indigo-200/50 px-4 py-2.5 text-base font-bold text-mem-navy shadow-md backdrop-blur-md">
+            <span className="text-slate-500">1.</span>
             <Thermometer className="h-4 w-4 text-rose-500" />
             COAHUILA DEFICIT · 36°C
             <Actions />
@@ -199,7 +199,7 @@ export function Mapas() {
           initial={{ opacity: 0, y: -14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.25 }}
-          className="absolute right-4 top-[104px] z-20 w-[420px] rounded-2xl bg-mem-lime p-6 shadow-xl"
+          className="absolute right-4 top-[104px] z-20 w-[420px] rounded-2xl border border-white/40 bg-mem-lime/75 p-6 shadow-xl backdrop-blur-md"
         >
           <p className="text-xl font-extrabold text-mem-ink">Latest Diagnose : Arrhythmias</p>
           <p className="mt-3 text-4xl font-extrabold text-mem-ink">8</p>
@@ -219,7 +219,7 @@ export function Mapas() {
           initial={{ opacity: 0, x: 16 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.35 }}
-          className="absolute right-[220px] top-[300px] z-20 w-80 rounded-2xl border border-white/70 bg-white/90 p-6 shadow-lg backdrop-blur"
+          className="absolute right-[220px] top-[300px] z-20 w-80 rounded-2xl border border-white/60 bg-indigo-200/40 p-6 shadow-lg backdrop-blur-md"
         >
           <div className="mb-3 flex items-center gap-2">
             <p className="text-xl font-extrabold text-mem-blue">ZONA NORTE</p>
