@@ -44,7 +44,7 @@ export function Home() {
         {/* Scrollable overlay layer */}
         <div className="relative h-full w-full overflow-y-auto">
           {/* Top-left: doctor card (2x) + DOCTORES EN TURNO pill (offset to clear the floating sidebar) */}
-          <div className="absolute left-[152px] top-6 flex max-w-[calc(100vw-176px)] flex-col items-start gap-6">
+          <div className="absolute left-[128px] top-6 flex max-w-[calc(100vw-152px)] flex-col items-start gap-6">
             <motion.div {...enter(0)} className="w-[min(90vw,520px)]">
               <div
                 className="relative overflow-hidden rounded-3xl border border-white/70 p-8 shadow-[0_20px_50px_rgba(0,122,222,0.22)]"
@@ -101,10 +101,10 @@ export function Home() {
             </motion.div>
           </div>
 
-          {/* Bottom-left: doctor avatars (3x bigger, offset to clear the floating sidebar) */}
+          {/* Bottom-left: doctor avatars (2x bigger, offset to clear the floating sidebar) */}
           <motion.div
             {...enter(0.2)}
-            className="absolute bottom-6 left-[152px] w-[min(56vw,900px)]"
+            className="absolute bottom-6 left-[128px] w-[min(74vw,1400px)]"
           >
             <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
           </motion.div>
@@ -114,7 +114,7 @@ export function Home() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="absolute bottom-6 right-6 z-30 w-[min(46vw,560px)]"
+            className="absolute bottom-6 right-6 z-30 w-[min(56vw,920px)]"
           >
             <img
               src={resetRelax}

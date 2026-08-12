@@ -4,7 +4,6 @@ import { CheckCircle2, Play, Home as HomeIcon, Map, BarChart3, X } from "lucide-
 import { Sidebar } from "./Sidebar";
 
 const SIDEBAR_LABELS: Record<string, string> = {
-  sync: "Sincronizando con Data Cloud…",
   files: "Expedientes clínicos cargados",
   voice: "Asistente de voz escuchando",
 };
@@ -61,15 +60,11 @@ export function ConsoleLayout({
           flashToast("Abriendo Analítica…", 1200);
           go("estadisticas");
           break;
-        case "sync": {
-          setBusyId("sync");
-          flashToast("Sincronizando con Data Cloud…");
-          window.setTimeout(() => {
-            setBusyId(null);
-            flashToast("Data Cloud sincronizada ✓");
-          }, 1600);
+        case "map":
+          setLauncherOpen(false);
+          flashToast("Abriendo Mapas…", 1200);
+          go("mapas");
           break;
-        }
         default:
           setLauncherOpen(false);
           flashToast(SIDEBAR_LABELS[id] ?? id);
@@ -109,7 +104,7 @@ export function ConsoleLayout({
               initial={{ opacity: 0, scale: 0.95, x: -8 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.95, x: -8 }}
-              className="fixed left-[150px] top-[120px] z-50 w-64 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+              className="fixed left-[128px] top-[120px] z-50 w-64 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
             >
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-mem-gray-2">

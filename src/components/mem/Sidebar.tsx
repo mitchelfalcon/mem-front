@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { LayoutGrid, RefreshCw, FolderClosed, PieChart, Mic } from "lucide-react";
+import { LayoutGrid, Map, FolderClosed, PieChart, Mic } from "lucide-react";
 import { SalesforceCloud } from "./SalesforceCloud";
 
 export interface SidebarItem {
@@ -10,7 +10,7 @@ export interface SidebarItem {
 
 const ITEMS: SidebarItem[] = [
   { id: "apps", label: "App Launcher", icon: LayoutGrid },
-  { id: "sync", label: "Data Cloud Sync", icon: RefreshCw },
+  { id: "map", label: "Mapas", icon: Map },
   { id: "files", label: "Expedientes", icon: FolderClosed },
   { id: "analytics", label: "Analítica", icon: PieChart },
   { id: "voice", label: "Asistente de Voz", icon: Mic },
@@ -25,36 +25,46 @@ interface SidebarProps {
 
 export function Sidebar({ active, onSelect, busyId = null }: SidebarProps) {
   return (
-    <aside className="flex w-[136px] shrink-0 flex-col items-center gap-5 rounded-r-3xl bg-gradient-to-b from-[#0b1e45] to-[#0a1533] py-6 shadow-2xl">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg">
-        <SalesforceCloud className="h-9 w-9" />
+    <aside className="flex h-full w-[112px] shrink-0 flex-col items-center gap-6 rounded-r-3xl bg-gradient-to-b from-[#0a1a4f] to-[#08123a] py-6 shadow-2xl">
+      {/* Salesforce cloud logo */}
+      <SalesforceCloud className="h-11 w-11 drop-shadow" />
+
+      {/* Icon rail — each icon in a navy circle */}
+      <div className="mt-2 flex flex-1 flex-col items-center gap-4">
+        {ITEMS.map(({ id, label, icon: Icon }) => {
+          const isActive = active === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              title={label}
+              aria-label={label}
+              aria-pressed={isActive}
+              onClick={() => onSelect(id)}
+              className={`group relative flex h-12 w-12 items-center justify-center rounded-full text-white transition-all active:scale-95 ${
+                isActive ? "bg-[#2557d6]" : "bg-[#1c3a8f] hover:bg-[#2557d6]"
+              }`}
+              style={
+                isActive
+                  ? { boxShadow: "0 0 0 3px rgba(96,165,250,0.45), 0 0 22px rgba(59,130,246,0.55)" }
+                  : { boxShadow: "0 6px 16px rgba(0,0,0,0.35)" }
+              }
+            >
+              <Icon className={`h-[22px] w-[22px] ${busyId === id ? "animate-spin" : ""}`} />
+              <span className="pointer-events-none absolute left-[60px] z-50 whitespace-nowrap rounded-md bg-mem-navy px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                {label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="mt-2 flex flex-1 flex-col items-center gap-3">
-        {ITEMS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            title={label}
-            aria-label={label}
-            aria-pressed={active === id}
-            data-active={active === id}
-            onClick={() => onSelect(id)}
-            className="side-icon group h-14 w-14"
-          >
-            <Icon className={`h-6 w-6 ${busyId === id ? "animate-spin" : ""}`} />
-            <span className="pointer-events-none absolute left-[64px] z-50 whitespace-nowrap rounded-md bg-mem-navy px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-              {label}
-            </span>
-          </button>
-        ))}
-      </div>
-
+      {/* Profile avatar */}
       <button
         type="button"
         title="Perfil"
         aria-label="Perfil"
-        className="h-12 w-12 rounded-full bg-gradient-to-br from-slate-200 to-slate-400 ring-2 ring-white/20 transition-transform hover:scale-105"
+        className="h-12 w-12 rounded-full bg-[#1c3a8f] shadow-[0_6px_16px_rgba(0,0,0,0.35)] ring-2 ring-white/10 transition-transform hover:scale-105"
       />
     </aside>
   );
