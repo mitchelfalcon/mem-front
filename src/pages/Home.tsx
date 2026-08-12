@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Sparkles, HeartPulse, ChevronRight } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
 import { VideoStage } from "../components/mem/VideoStage";
+import { CalendarCard } from "../components/mem/CalendarCard";
 import drArmando from "../assets/dr-armando.png";
 import doctoresTurno from "../assets/doctores-turno.png";
 import resetRelax from "../assets/reset-relax.png";
@@ -25,7 +26,7 @@ const enter = (delay: number) => ({
 });
 
 export function Home() {
-  const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [mood, setMood] = useState<number | null>(null);
 
   return (
@@ -43,68 +44,71 @@ export function Home() {
 
         {/* Scrollable overlay layer */}
         <div className="relative h-full w-full overflow-y-auto">
-          {/* Top-right: doctor card (smaller) */}
-          <motion.div {...enter(0)} className="absolute right-6 top-6 z-20 w-[min(84vw,340px)]">
-            <div
-              className="relative overflow-hidden rounded-3xl border border-white/70 p-5 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
-              style={{ background: CARD_GRADIENT }}
-            >
-              <div className="mb-4 flex items-center gap-3">
-                <img
-                  src={drArmando}
-                  alt="Dr. Armando Cárdenas"
-                  className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow-md"
-                />
-                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
-                  <HeartPulse className="h-6 w-6 text-white" />
-                </span>
-              </div>
-              <p className="text-base font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
-              <p className="mb-4 text-xs font-medium text-mem-gray">Médico en Turno</p>
-              <button
-                type="button"
-                onClick={() => setSummaryOpen((v) => !v)}
-                className="btn-mem w-full justify-center py-2.5 text-sm"
-                aria-expanded={summaryOpen}
+          {/* Top-left: doctor card + calendar (same size, side by side) */}
+          <div className="absolute left-[128px] top-6 flex max-w-[calc(100vw-152px)] flex-wrap items-stretch gap-5">
+            <motion.div {...enter(0)} className="w-[min(40vw,340px)]">
+              <div
+                className="relative h-full overflow-hidden rounded-3xl border border-white/70 p-5 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
+                style={{ background: CARD_GRADIENT }}
               >
-                <Sparkles className="h-4 w-4" />
-                Quick Summary
-              </button>
+                <div className="mb-4 flex items-center gap-3">
+                  <img
+                    src={drArmando}
+                    alt="Dr. Armando Cárdenas"
+                    className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow-md"
+                  />
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
+                    <HeartPulse className="h-6 w-6 text-white" />
+                  </span>
+                </div>
+                <p className="text-base font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
+                <p className="mb-4 text-xs font-medium text-mem-gray">Médico en Turno</p>
+                <button
+                  type="button"
+                  onClick={() => setSummaryOpen((v) => !v)}
+                  className="btn-mem w-full justify-center py-2.5 text-sm"
+                  aria-expanded={summaryOpen}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Quick Summary
+                </button>
 
-              <AnimatePresence initial={false}>
-                {summaryOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="mt-3 space-y-2 overflow-hidden"
-                  >
-                    {SUMMARY.map((s) => (
-                      <div key={s.label} className="flex items-center justify-between border-t border-white/40 pt-2">
-                        <span className="text-xs font-medium text-mem-navy/80">{s.label}</span>
-                        <span className={`text-lg font-extrabold ${s.tone}`}>{s.value}</span>
-                      </div>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
+                <AnimatePresence initial={false}>
+                  {summaryOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 space-y-2 overflow-hidden"
+                    >
+                      {SUMMARY.map((s) => (
+                        <div key={s.label} className="flex items-center justify-between border-t border-white/40 pt-2">
+                          <span className="text-xs font-medium text-mem-navy/80">{s.label}</span>
+                          <span className={`text-lg font-extrabold ${s.tone}`}>{s.value}</span>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
 
-          {/* Top-left: DOCTORES EN TURNO pill (offset to clear the floating sidebar) */}
-          <motion.div {...enter(0.1)} className="absolute left-[128px] top-6">
-            <button className="inline-flex items-center gap-3 rounded-full bg-mem-lime px-8 py-3 text-base font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mem-ink/80 text-xs text-mem-lime">✦</span>
-              Doctores en turno
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          </motion.div>
+            {/* Calendar — same size as the doctor card */}
+            <motion.div {...enter(0.1)} className="w-[min(40vw,340px)]">
+              <CalendarCard />
+            </motion.div>
+          </div>
 
-          {/* Bottom-left: doctor avatars (2x bigger, offset to clear the floating sidebar) */}
+          {/* Left (raised): DOCTORES EN TURNO pill + doctor avatars — raised so Reset & Relax no longer overlaps it */}
           <motion.div
             {...enter(0.2)}
-            className="absolute bottom-6 left-[128px] w-[min(74vw,1400px)]"
+            className="absolute left-[128px] top-[47%] w-[min(52vw,720px)]"
           >
+            <button className="mb-3 inline-flex items-center gap-3 rounded-full bg-mem-lime px-6 py-2.5 text-sm font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-mem-ink/80 text-[10px] text-mem-lime">✦</span>
+              Doctores en turno
+              <ChevronRight className="h-5 w-5" />
+            </button>
             <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
           </motion.div>
 
