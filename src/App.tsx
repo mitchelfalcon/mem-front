@@ -3,6 +3,7 @@ import { Presentation } from "./pages/Presentation";
 import { Home } from "./pages/Home";
 import { Mapas } from "./pages/Mapas";
 import { Estadisticas } from "./pages/Estadisticas";
+import { ConsoleTabs, ConsoleIcons } from "./components/mem/ConsoleNav";
 
 type PageId = "presentation" | "home" | "mapas" | "estadisticas";
 
@@ -33,43 +34,57 @@ export default function App() {
     setPage(id);
   };
 
+  const isConsole = page !== "presentation";
+
   return (
     <div className="flex h-full min-h-screen flex-col">
-      {/* Global menu header — brand left, menu enlarged + centered */}
-      <header className="sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur-xl">
-        <div className="relative flex min-h-24 w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:h-24 lg:flex-nowrap lg:justify-start lg:py-0">
+      {/* Consolidated header: single MEM Healthcare brand + main menu + console nav */}
+      <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 backdrop-blur-xl">
+        {/* Row 1 — brand (once), main menu centered, console action icons */}
+        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <button
             onClick={() => go("presentation")}
-            className="z-10 flex items-center gap-2"
+            className="flex shrink-0 items-center gap-2"
             aria-label="MEM Healthcare — inicio"
           >
             <span className="mem-brand text-3xl">MEM</span>
-            <span className="hidden text-base font-bold text-mem-navy/80 sm:inline">Healthcare</span>
+            <span className="text-base font-bold text-mem-navy/80">Healthcare</span>
           </button>
 
-          <nav className="order-last flex w-full flex-wrap items-center justify-center gap-2 rounded-full border border-white/70 bg-white/60 p-1.5 shadow-sm lg:absolute lg:left-1/2 lg:order-none lg:w-auto lg:-translate-x-1/2 lg:flex-nowrap">
-            {NAV.map(({ id, label }) => (
-              <button
-                key={id}
-                onClick={() => go(id)}
-                aria-current={page === id ? "page" : undefined}
-                className={`nav-pill ${
-                  page === id
-                    ? "text-white"
-                    : "text-slate-600 hover:text-mem-navy"
-                }`}
-              >
-                {page === id && (
-                  <span
-                    className="absolute inset-0 -z-10 rounded-full"
-                    style={{ background: "linear-gradient(90deg,#007ade,#6d3bf5)" }}
-                  />
-                )}
-                {label}
-              </button>
-            ))}
-          </nav>
+          <div className="flex w-full flex-1 justify-center order-last lg:order-none lg:w-auto">
+            <nav className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-white/70 bg-white/60 p-1.5 shadow-sm">
+              {NAV.map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => go(id)}
+                  aria-current={page === id ? "page" : undefined}
+                  className={`nav-pill ${page === id ? "text-white" : "text-slate-600 hover:text-mem-navy"}`}
+                >
+                  {page === id && (
+                    <span
+                      className="absolute inset-0 -z-10 rounded-full"
+                      style={{ background: "linear-gradient(90deg,#007ade,#6d3bf5)" }}
+                    />
+                  )}
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {isConsole && (
+            <div className="ml-auto hidden shrink-0 lg:flex">
+              <ConsoleIcons />
+            </div>
+          )}
         </div>
+
+        {/* Row 2 — Salesforce-style console tabs (console pages only) */}
+        {isConsole && (
+          <div className="w-full overflow-x-auto border-t border-slate-100 px-4 py-1.5 sm:px-6">
+            <ConsoleTabs />
+          </div>
+        )}
       </header>
 
       {/* Page content */}

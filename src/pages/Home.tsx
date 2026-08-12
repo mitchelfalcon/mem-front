@@ -28,8 +28,8 @@ export function Home() {
     <ConsoleLayout defaultSidebar="apps">
       {/* Full-width two-area layout: fixed LEFT column + RIGHT video area */}
       <div className="flex h-full w-full flex-col gap-6 overflow-y-auto lg:flex-row lg:items-stretch lg:overflow-visible">
-        {/* ── LEFT column (left-aligned, stacked) ── */}
-        <div className="flex w-full flex-col items-start gap-6 lg:w-[480px] lg:shrink-0">
+        {/* ── LEFT column (narrow, left-aligned) so the video dominates ── */}
+        <div className="flex w-full flex-col items-start gap-6 lg:w-[340px] lg:shrink-0">
           {/* Doctor profile card */}
           <motion.div {...enter(0)} className="w-full max-w-[460px]">
             <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-6 shadow-[0_16px_40px_rgba(0,122,222,0.18)] backdrop-blur-xl">
@@ -100,21 +100,21 @@ export function Home() {
           initial={{ opacity: 0, scale: 0.97 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.55, delay: 0.1 }}
-          className="relative flex min-h-0 flex-1 items-start justify-end"
+          className="relative flex min-h-0 flex-1 items-center justify-end"
         >
-          {/* z-index: background image (0) -> video (10) inside VideoStage */}
+          {/* Dominant video — z-index: background image (0) -> video (10) inside VideoStage */}
           <VideoStage
             videoId="1217019780"
             title="MEM Healthcare — animación de inicio"
             className="w-full border border-white/70 shadow-[0_20px_50px_rgba(0,122,222,0.18)]"
           />
 
-          {/* Reset & Relax — top-right corner, 50% bigger, overlapping the video (z-index 30) */}
+          {/* Reset & Relax — BOTTOM-right corner, 50% bigger, overlapping the video (z-index 30) */}
           <motion.div
-            initial={{ opacity: 0, y: -18 }}
+            initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="absolute right-4 top-4 z-30 w-[min(92%,480px)] overflow-hidden rounded-3xl bg-gradient-to-r from-[#0a1f4d]/95 via-[#123a7a]/95 to-[#0a1f4d]/95 p-8 shadow-2xl backdrop-blur-md"
+            className="absolute bottom-4 right-4 z-30 w-[min(92%,480px)] overflow-hidden rounded-3xl bg-gradient-to-r from-[#0a1f4d]/95 via-[#123a7a]/95 to-[#0a1f4d]/95 p-8 shadow-2xl backdrop-blur-md"
           >
             <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-mem-blue/30 blur-2xl" />
             <div className="relative">

@@ -2,7 +2,6 @@ import { useState, useCallback, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Play, Home as HomeIcon, Map, BarChart3, X } from "lucide-react";
 import { Sidebar } from "./Sidebar";
-import { ConsoleTopbar } from "./ConsoleTopbar";
 
 const SIDEBAR_LABELS: Record<string, string> = {
   sync: "Sincronizando con Data Cloud…",
@@ -81,7 +80,6 @@ export function ConsoleLayout({
       <Sidebar active={activeSide} busyId={busyId} onSelect={handleSelect} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <ConsoleTopbar />
         {toolbar}
         <main className={`min-h-0 flex-1 ${centerContent ? "flex items-center justify-center" : ""}`}>
           {children}
