@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Sparkles, HeartPulse, Wind, ChevronRight } from "lucide-react";
+import { Sparkles, HeartPulse, ChevronRight } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
 import { VideoStage } from "../components/mem/VideoStage";
 import drArmando from "../assets/dr-armando.png";
 import doctoresTurno from "../assets/doctores-turno.png";
+import resetRelax from "../assets/reset-relax.png";
+
+// Doctor-card background gradient (matches the Figma card fill).
+const CARD_GRADIENT = "radial-gradient(120% 120% at 50% 42%, #9fb0ec 0%, #bcc7f2 46%, #dee5fb 100%)";
 
 const SUMMARY = [
   { label: "Pacientes en turno", value: "24", tone: "text-mem-blue" },
@@ -42,7 +46,10 @@ export function Home() {
           {/* Top-left: doctor card (2x) + DOCTORES EN TURNO pill (offset to clear the floating sidebar) */}
           <div className="absolute left-[152px] top-6 flex max-w-[calc(100vw-176px)] flex-col items-start gap-6">
             <motion.div {...enter(0)} className="w-[min(90vw,520px)]">
-              <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/85 p-8 shadow-[0_20px_50px_rgba(0,122,222,0.22)] backdrop-blur-xl">
+              <div
+                className="relative overflow-hidden rounded-3xl border border-white/70 p-8 shadow-[0_20px_50px_rgba(0,122,222,0.22)]"
+                style={{ background: CARD_GRADIENT }}
+              >
                 <div className="mb-6 flex items-center gap-5">
                   <img
                     src={drArmando}
@@ -74,8 +81,8 @@ export function Home() {
                       className="mt-5 space-y-3 overflow-hidden"
                     >
                       {SUMMARY.map((s) => (
-                        <div key={s.label} className="flex items-center justify-between border-t border-slate-100 pt-3">
-                          <span className="text-base text-mem-gray">{s.label}</span>
+                        <div key={s.label} className="flex items-center justify-between border-t border-white/40 pt-3">
+                          <span className="text-base font-medium text-mem-navy/80">{s.label}</span>
                           <span className={`text-3xl font-extrabold ${s.tone}`}>{s.value}</span>
                         </div>
                       ))}
@@ -102,29 +109,31 @@ export function Home() {
             <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
           </motion.div>
 
-          {/* Bottom-right: Reset & Relax */}
+          {/* Bottom-right: Reset & Relax (exact Figma export) with interactive Track-my-mood overlay */}
           <motion.div
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.25 }}
-            className="absolute bottom-6 right-6 z-30 w-[min(38vw,440px)] overflow-hidden rounded-3xl bg-gradient-to-r from-[#0a1f4d]/95 via-[#123a7a]/95 to-[#0a1f4d]/95 p-8 shadow-2xl backdrop-blur-md"
+            className="absolute bottom-6 right-6 z-30 w-[min(46vw,560px)]"
           >
-            <div className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-mem-blue/30 blur-2xl" />
-            <div className="relative">
-              <h3 className="flex items-center gap-3 text-3xl font-extrabold text-white">
-                <Wind className="h-8 w-8 text-sky-300" /> Reset &amp; Relax
-              </h3>
-              <p className="mt-3 max-w-md text-base leading-relaxed text-slate-200/85">
-                Take a moment to unwind and recharge with guided meditation, breathing exercises, and mindfulness tips.
-              </p>
-              <button
-                type="button"
-                onClick={() => setMood((m) => (m === null ? 0 : (m + 1) % MOODS.length))}
-                className="mt-5 rounded-xl bg-white/90 px-6 py-3 text-base font-bold text-mem-ink shadow-sm transition-transform hover:scale-105 active:scale-95"
-              >
-                {mood === null ? "Track my mood" : MOODS[mood]}
-              </button>
-            </div>
+            <img
+              src={resetRelax}
+              alt="Reset & Relax — take a moment to unwind and recharge"
+              className="w-full select-none rounded-2xl shadow-2xl"
+            />
+            {/* Transparent hit-area over the baked "Track my mood" button */}
+            <button
+              type="button"
+              aria-label="Track my mood"
+              onClick={() => setMood((m) => (m === null ? 0 : (m + 1) % MOODS.length))}
+              className="absolute left-[68%] top-[29%] h-[42%] w-[26%]"
+            >
+              {mood !== null && (
+                <span className="flex h-full w-full items-center justify-center rounded-lg bg-white text-[13px] font-bold text-mem-ink shadow">
+                  {MOODS[mood]}
+                </span>
+              )}
+            </button>
           </motion.div>
         </div>
       </VideoStage>
