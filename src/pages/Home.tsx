@@ -42,106 +42,108 @@ export function Home() {
         {/* Left legibility scrim (keeps overlays readable, video stays immersive) */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/45 via-white/10 to-transparent" />
 
-        {/* Scrollable overlay layer */}
-        <div className="relative h-full w-full overflow-y-auto">
-          {/* Top-left: doctor card + calendar (same size, side by side) */}
-          <div className="absolute left-[128px] top-6 flex max-w-[calc(100vw-152px)] flex-wrap items-stretch gap-5">
-            <motion.div {...enter(0)} className="w-[min(40vw,340px)]">
-              <div
-                className="relative h-full overflow-hidden rounded-3xl border border-white/70 p-5 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
-                style={{ background: CARD_GRADIENT }}
-              >
-                <div className="mb-4 flex items-center gap-3">
-                  <img
-                    src={drArmando}
-                    alt="Dr. Armando Cárdenas"
-                    className="h-16 w-16 rounded-full object-cover ring-2 ring-white shadow-md"
-                  />
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
-                    <HeartPulse className="h-6 w-6 text-white" />
-                  </span>
-                </div>
-                <p className="text-base font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
-                <p className="mb-4 text-xs font-medium text-mem-gray">Médico en Turno</p>
-                <button
-                  type="button"
-                  onClick={() => setSummaryOpen((v) => !v)}
-                  className="btn-mem w-full justify-center py-2.5 text-sm"
-                  aria-expanded={summaryOpen}
+        {/* Symmetric 50/50 split — no absolute positioning, so no overlaps */}
+        <div className="grid h-full w-full grid-cols-1 gap-6 overflow-y-auto p-6 pl-[128px] lg:grid-cols-2">
+          {/* ── LEFT column: cards + pill + doctor avatars ── */}
+          <div className="flex min-w-0 flex-col items-start gap-4">
+            <div className="flex w-full items-stretch gap-4">
+              {/* Doctor card */}
+              <motion.div {...enter(0)} className="min-w-0 flex-1">
+                <div
+                  className="relative h-full overflow-hidden rounded-3xl border border-white/70 p-4 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
+                  style={{ background: CARD_GRADIENT }}
                 >
-                  <Sparkles className="h-4 w-4" />
-                  Quick Summary
-                </button>
+                  <div className="mb-3 flex items-center gap-3">
+                    <img
+                      src={drArmando}
+                      alt="Dr. Armando Cárdenas"
+                      className="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow-md"
+                    />
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
+                      <HeartPulse className="h-6 w-6 text-white" />
+                    </span>
+                  </div>
+                  <p className="text-sm font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
+                  <p className="mb-3 text-xs font-medium text-mem-gray">Médico en Turno</p>
+                  <button
+                    type="button"
+                    onClick={() => setSummaryOpen((v) => !v)}
+                    className="btn-mem w-full justify-center py-2 text-sm"
+                    aria-expanded={summaryOpen}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Quick Summary
+                  </button>
 
-                <AnimatePresence initial={false}>
-                  {summaryOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 space-y-2 overflow-hidden"
-                    >
-                      {SUMMARY.map((s) => (
-                        <div key={s.label} className="flex items-center justify-between border-t border-white/40 pt-2">
-                          <span className="text-xs font-medium text-mem-navy/80">{s.label}</span>
-                          <span className={`text-lg font-extrabold ${s.tone}`}>{s.value}</span>
-                        </div>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+                  <AnimatePresence initial={false}>
+                    {summaryOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 space-y-2 overflow-hidden"
+                      >
+                        {SUMMARY.map((s) => (
+                          <div key={s.label} className="flex items-center justify-between border-t border-white/40 pt-2">
+                            <span className="text-xs font-medium text-mem-navy/80">{s.label}</span>
+                            <span className={`text-lg font-extrabold ${s.tone}`}>{s.value}</span>
+                          </div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </motion.div>
 
-            {/* Calendar — same size as the doctor card */}
-            <motion.div {...enter(0.1)} className="w-[min(40vw,340px)]">
-              <CalendarCard />
-            </motion.div>
+              {/* Calendar — same size as the doctor card */}
+              <motion.div {...enter(0.1)} className="min-w-0 flex-1">
+                <CalendarCard />
+              </motion.div>
+            </div>
 
             {/* DOCTORES EN TURNO pill — below the cards */}
-            <motion.div {...enter(0.15)} className="w-full">
+            <motion.div {...enter(0.15)}>
               <button className="inline-flex items-center gap-3 rounded-full bg-mem-lime px-6 py-2.5 text-sm font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-mem-ink/80 text-[10px] text-mem-lime">✦</span>
                 Doctores en turno
                 <ChevronRight className="h-5 w-5" />
               </button>
             </motion.div>
+
+            {/* Doctor avatars — directly below the pill, within the left column */}
+            <motion.div {...enter(0.2)} className="w-full">
+              <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
+            </motion.div>
           </div>
 
-          {/* Bottom-left: doctor avatars (2x bigger) */}
-          <motion.div
-            {...enter(0.2)}
-            className="absolute bottom-6 left-[128px] w-[min(80vw,1440px)]"
-          >
-            <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
-          </motion.div>
-
-          {/* Bottom-right: Reset & Relax (exact Figma export) with interactive Track-my-mood overlay */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.25 }}
-            className="absolute bottom-6 right-6 z-30 w-[min(56vw,920px)]"
-          >
-            <img
-              src={resetRelax}
-              alt="Reset & Relax — take a moment to unwind and recharge"
-              className="w-full select-none rounded-2xl shadow-2xl"
-            />
-            {/* Transparent hit-area over the baked "Track my mood" button */}
-            <button
-              type="button"
-              aria-label="Track my mood"
-              onClick={() => setMood((m) => (m === null ? 0 : (m + 1) % MOODS.length))}
-              className="absolute left-[68%] top-[29%] h-[42%] w-[26%]"
+          {/* ── RIGHT column: Reset & Relax (smaller) pinned bottom-right ── */}
+          <div className="flex min-w-0 flex-col items-end justify-end">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.25 }}
+              className="relative w-[min(100%,440px)]"
             >
-              {mood !== null && (
-                <span className="flex h-full w-full items-center justify-center rounded-lg bg-white text-[13px] font-bold text-mem-ink shadow">
-                  {MOODS[mood]}
-                </span>
-              )}
-            </button>
-          </motion.div>
+              <img
+                src={resetRelax}
+                alt="Reset & Relax — take a moment to unwind and recharge"
+                className="w-full select-none rounded-2xl shadow-2xl"
+              />
+              {/* Transparent hit-area over the baked "Track my mood" button */}
+              <button
+                type="button"
+                aria-label="Track my mood"
+                onClick={() => setMood((m) => (m === null ? 0 : (m + 1) % MOODS.length))}
+                className="absolute left-[68%] top-[29%] h-[42%] w-[26%]"
+              >
+                {mood !== null && (
+                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-white text-[12px] font-bold text-mem-ink shadow">
+                    {MOODS[mood]}
+                  </span>
+                )}
+              </button>
+            </motion.div>
+          </div>
         </div>
       </VideoStage>
     </ConsoleLayout>
