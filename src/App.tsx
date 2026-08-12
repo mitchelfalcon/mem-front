@@ -35,19 +35,19 @@ export default function App() {
 
   return (
     <div className="flex h-full min-h-screen flex-col">
-      {/* Global menu header */}
+      {/* Global menu header — brand left, menu enlarged + centered */}
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center gap-4 px-4 sm:px-6">
+        <div className="relative mx-auto flex min-h-24 w-full max-w-[1600px] flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:h-24 lg:flex-nowrap lg:justify-start lg:py-0">
           <button
             onClick={() => go("presentation")}
-            className="flex items-center gap-2"
+            className="z-10 flex items-center gap-2"
             aria-label="MEM Healthcare — inicio"
           >
-            <span className="mem-brand text-2xl">MEM</span>
-            <span className="hidden text-sm font-bold text-mem-navy/80 sm:inline">Healthcare</span>
+            <span className="mem-brand text-3xl">MEM</span>
+            <span className="hidden text-base font-bold text-mem-navy/80 sm:inline">Healthcare</span>
           </button>
 
-          <nav className="ml-auto flex items-center gap-1 rounded-full border border-white/70 bg-white/60 p-1 shadow-sm">
+          <nav className="order-last flex w-full flex-wrap items-center justify-center gap-2 rounded-full border border-white/70 bg-white/60 p-1.5 shadow-sm lg:absolute lg:left-1/2 lg:order-none lg:w-auto lg:-translate-x-1/2 lg:flex-nowrap">
             {NAV.map(({ id, label }) => (
               <button
                 key={id}

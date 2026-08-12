@@ -14,46 +14,54 @@ const SUMMARY = [
 
 const MOODS = ["😌 Tranquilo", "🙂 Estable", "😐 Neutral", "😓 Cansado"];
 
+// Shared entrance animation ("when they're in")
+const enter = (delay: number) => ({
+  initial: { opacity: 0, y: 24 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as const },
+});
+
 export function Home() {
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [mood, setMood] = useState<number | null>(null);
 
   return (
-    <ConsoleLayout defaultSidebar="apps" centerContent>
-      {/* Main container is centered horizontally + vertically by ConsoleLayout.
-          VideoStage stacks: background image (z0) -> video (z10) -> UI (z20). */}
+    <ConsoleLayout defaultSidebar="apps">
+      {/* Big video as the background layer (3x), cards overlaid on the left.
+          Strict z-index: background image (0) -> video (10) -> cards (20). */}
       <VideoStage
         videoId="1217019780"
         title="MEM Healthcare — animación de inicio"
-        className="mx-auto w-full max-w-[1200px] border border-white/70 shadow-[0_20px_50px_rgba(0,122,222,0.15)]"
+        className="h-full min-h-[600px] w-full border border-white/70 shadow-[0_20px_50px_rgba(0,122,222,0.18)]"
         contentClassName="h-full"
       >
-        {/* Light legibility scrim — keeps the video (middle layer) clearly visible */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/20 to-white/10" />
+        {/* Left legibility scrim so cards stay readable, video stays visible on the right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-white/60 via-white/25 to-transparent" />
 
-        <div className="relative flex h-full flex-col gap-4 overflow-y-auto p-4 sm:p-6">
-          {/* Doctor card */}
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
-            className="w-full max-w-[280px]"
-          >
-            <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-4 shadow-[0_12px_30px_rgba(0,122,222,0.16)] backdrop-blur-xl">
-              <div className="mb-4 flex items-center gap-3">
+        {/* Cards overlaid on the LEFT (z-index 20 layer) */}
+        <div className="relative flex h-full max-w-[500px] flex-col justify-between gap-6 overflow-y-auto p-5 sm:p-6">
+          {/* Doctor card (bigger + translucent) */}
+          <motion.div {...enter(0)} className="w-full max-w-[460px]">
+            <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/55 p-6 shadow-[0_16px_40px_rgba(0,122,222,0.18)] backdrop-blur-xl">
+              <div className="mb-5 flex items-center gap-4">
                 <img
                   src={drArmando}
                   alt="Dr. Armando Cárdenas"
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-white shadow"
+                  className="h-20 w-20 rounded-full object-cover ring-4 ring-white shadow-md"
                 />
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
-                  <HeartPulse className="h-6 w-6 text-white" />
+                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 shadow-lg shadow-rose-500/30">
+                  <HeartPulse className="h-8 w-8 text-white" />
                 </span>
               </div>
-              <p className="text-sm font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
-              <p className="mb-4 text-xs font-medium text-mem-gray">Médico en Turno</p>
-              <button type="button" onClick={() => setSummaryOpen((v) => !v)} className="btn-mem w-full justify-center" aria-expanded={summaryOpen}>
-                <Sparkles className="h-4 w-4" />
+              <p className="text-lg font-extrabold tracking-wide text-mem-ink">DR ARMANDO CÁRDENAS</p>
+              <p className="mb-5 text-sm font-medium text-mem-gray">Médico en Turno</p>
+              <button
+                type="button"
+                onClick={() => setSummaryOpen((v) => !v)}
+                className="btn-mem w-full justify-center py-3 text-base"
+                aria-expanded={summaryOpen}
+              >
+                <Sparkles className="h-5 w-5" />
                 Quick Summary
               </button>
 
@@ -63,12 +71,12 @@ export function Home() {
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="mt-3 space-y-2 overflow-hidden"
+                    className="mt-4 space-y-2.5 overflow-hidden"
                   >
                     {SUMMARY.map((s) => (
-                      <div key={s.label} className="flex items-center justify-between border-t border-slate-100 pt-2">
-                        <span className="text-xs text-mem-gray">{s.label}</span>
-                        <span className={`text-base font-extrabold ${s.tone}`}>{s.value}</span>
+                      <div key={s.label} className="flex items-center justify-between border-t border-white/50 pt-2.5">
+                        <span className="text-sm text-mem-gray">{s.label}</span>
+                        <span className={`text-xl font-extrabold ${s.tone}`}>{s.value}</span>
                       </div>
                     ))}
                   </motion.div>
@@ -77,27 +85,25 @@ export function Home() {
             </div>
           </motion.div>
 
-          {/* Reset & Relax banner */}
+          {/* Reset & Relax banner (bigger + translucent) */}
           <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.12 }}
-            className="relative w-full max-w-[520px] overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1f4d] via-[#123a7a] to-[#0a1f4d] p-5 shadow-xl"
+            {...enter(0.12)}
+            className="relative w-full overflow-hidden rounded-3xl bg-gradient-to-r from-[#0a1f4d]/90 via-[#123a7a]/90 to-[#0a1f4d]/90 p-7 shadow-xl backdrop-blur-md"
           >
-            <div className="absolute -right-6 -top-8 h-28 w-28 rounded-full bg-mem-blue/30 blur-2xl" />
-            <div className="relative flex items-center justify-between gap-4">
+            <div className="absolute -right-8 -top-10 h-36 w-36 rounded-full bg-mem-blue/30 blur-2xl" />
+            <div className="relative flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
-                <h3 className="flex items-center gap-2 text-xl font-extrabold text-white">
-                  <Wind className="h-5 w-5 text-sky-300" /> Reset &amp; Relax
+                <h3 className="flex items-center gap-2 text-2xl font-extrabold text-white">
+                  <Wind className="h-6 w-6 text-sky-300" /> Reset &amp; Relax
                 </h3>
-                <p className="mt-1 max-w-xs text-xs leading-relaxed text-slate-200/80">
+                <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-200/85">
                   Take a moment to unwind and recharge with guided meditation, breathing exercises, and mindfulness tips.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setMood((m) => (m === null ? 0 : (m + 1) % MOODS.length))}
-                className="shrink-0 whitespace-nowrap rounded-lg bg-white/90 px-4 py-2 text-xs font-bold text-mem-ink shadow-sm transition-transform hover:scale-105 active:scale-95"
+                className="shrink-0 whitespace-nowrap rounded-xl bg-white/90 px-5 py-2.5 text-sm font-bold text-mem-ink shadow-sm transition-transform hover:scale-105 active:scale-95"
               >
                 {mood === null ? "Track my mood" : MOODS[mood]}
               </button>
@@ -105,23 +111,13 @@ export function Home() {
           </motion.div>
 
           {/* Doctores en turno */}
-          <motion.div
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.24 }}
-            className="mt-auto"
-          >
-            <button className="mb-2 inline-flex items-center gap-2 rounded-full bg-mem-lime px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-mem-ink shadow-sm transition-transform hover:scale-105">
+          <motion.div {...enter(0.24)}>
+            <button className="mb-3 inline-flex items-center gap-2 rounded-full bg-mem-lime px-4 py-1.5 text-xs font-extrabold uppercase tracking-wide text-mem-ink shadow-sm transition-transform hover:scale-105">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-mem-ink/80 text-[9px] text-mem-lime">✦</span>
               Doctores en turno
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-4 w-4" />
             </button>
-            <img
-              src={doctoresTurno}
-              alt="Doctores en turno"
-              className="w-full max-w-3xl select-none object-contain"
-              loading="lazy"
-            />
+            <img src={doctoresTurno} alt="Doctores en turno" className="w-full max-w-md select-none object-contain" loading="lazy" />
           </motion.div>
         </div>
       </VideoStage>
