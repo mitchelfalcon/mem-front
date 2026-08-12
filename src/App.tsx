@@ -37,7 +37,7 @@ export default function App() {
     <div className="flex h-full min-h-screen flex-col">
       {/* Global menu header — brand left, menu enlarged + centered */}
       <header className="sticky top-0 z-40 border-b border-white/60 bg-white/70 backdrop-blur-xl">
-        <div className="relative mx-auto flex min-h-24 w-full max-w-[1600px] flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:h-24 lg:flex-nowrap lg:justify-start lg:py-0">
+        <div className="relative flex min-h-24 w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6 lg:h-24 lg:flex-nowrap lg:justify-start lg:py-0">
           <button
             onClick={() => go("presentation")}
             className="z-10 flex items-center gap-2"

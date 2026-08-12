@@ -77,7 +77,7 @@ export function ConsoleLayout({
   );
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] gap-3 p-3">
+    <div className="flex h-full min-h-0 w-full gap-3 py-3 pr-3">
       <Sidebar active={activeSide} busyId={busyId} onSelect={handleSelect} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-3">
