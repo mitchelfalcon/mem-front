@@ -18,9 +18,11 @@ const ITEMS: SidebarItem[] = [
 interface SidebarProps {
   active: string;
   onSelect: (id: string) => void;
+  /** Id of the item currently performing an async action (spins its icon). */
+  busyId?: string | null;
 }
 
-export function Sidebar({ active, onSelect }: SidebarProps) {
+export function Sidebar({ active, onSelect, busyId = null }: SidebarProps) {
   return (
     <aside className="flex w-[68px] shrink-0 flex-col items-center gap-4 rounded-r-3xl bg-gradient-to-b from-[#0b1e45] to-[#0a1533] py-5 shadow-2xl">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/95 shadow-lg">
@@ -39,7 +41,7 @@ export function Sidebar({ active, onSelect }: SidebarProps) {
             onClick={() => onSelect(id)}
             className="side-icon group"
           >
-            <Icon className="h-5 w-5" />
+            <Icon className={`h-5 w-5 ${busyId === id ? "animate-spin" : ""}`} />
             <span className="pointer-events-none absolute left-[54px] z-50 whitespace-nowrap rounded-md bg-mem-navy px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
               {label}
             </span>

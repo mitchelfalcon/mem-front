@@ -19,19 +19,26 @@ export function Home() {
   const [mood, setMood] = useState<number | null>(null);
 
   return (
-    <ConsoleLayout defaultSidebar="apps">
+    <ConsoleLayout defaultSidebar="apps" centerContent>
+      {/* Main container is centered horizontally + vertically by ConsoleLayout.
+          VideoStage stacks: background image (z0) -> video (z10) -> UI (z20). */}
       <VideoStage
         videoId="1217019780"
         title="MEM Healthcare — animación de inicio"
-        className="h-full min-h-[560px] border border-white/70 shadow-[0_20px_50px_rgba(0,122,222,0.15)]"
+        className="mx-auto w-full max-w-[1200px] border border-white/70 shadow-[0_20px_50px_rgba(0,122,222,0.15)]"
         contentClassName="h-full"
       >
-        {/* Legibility scrim over the video */}
-        <div className="absolute inset-0 bg-gradient-to-b from-white/72 via-white/60 to-blue-50/55" />
+        {/* Light legibility scrim — keeps the video (middle layer) clearly visible */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/40 via-white/20 to-white/10" />
 
         <div className="relative flex h-full flex-col gap-4 overflow-y-auto p-4 sm:p-6">
           {/* Doctor card */}
-          <div className="w-full max-w-[280px]">
+          <motion.div
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="w-full max-w-[280px]"
+          >
             <div className="relative overflow-hidden rounded-2xl border border-white/70 bg-white/85 p-4 shadow-[0_12px_30px_rgba(0,122,222,0.16)] backdrop-blur-xl">
               <div className="mb-4 flex items-center gap-3">
                 <img
@@ -68,10 +75,15 @@ export function Home() {
                 )}
               </AnimatePresence>
             </div>
-          </div>
+          </motion.div>
 
           {/* Reset & Relax banner */}
-          <div className="relative w-full max-w-[520px] overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1f4d] via-[#123a7a] to-[#0a1f4d] p-5 shadow-xl">
+          <motion.div
+            initial={{ opacity: 0, x: -24 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.12 }}
+            className="relative w-full max-w-[520px] overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1f4d] via-[#123a7a] to-[#0a1f4d] p-5 shadow-xl"
+          >
             <div className="absolute -right-6 -top-8 h-28 w-28 rounded-full bg-mem-blue/30 blur-2xl" />
             <div className="relative flex items-center justify-between gap-4">
               <div className="min-w-0">
@@ -90,10 +102,15 @@ export function Home() {
                 {mood === null ? "Track my mood" : MOODS[mood]}
               </button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Doctores en turno */}
-          <div className="mt-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.24 }}
+            className="mt-auto"
+          >
             <button className="mb-2 inline-flex items-center gap-2 rounded-full bg-mem-lime px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-mem-ink shadow-sm transition-transform hover:scale-105">
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-mem-ink/80 text-[9px] text-mem-lime">✦</span>
               Doctores en turno
@@ -105,7 +122,7 @@ export function Home() {
               className="w-full max-w-3xl select-none object-contain"
               loading="lazy"
             />
-          </div>
+          </motion.div>
         </div>
       </VideoStage>
     </ConsoleLayout>
