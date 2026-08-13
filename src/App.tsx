@@ -38,10 +38,10 @@ export default function App() {
   const isConsole = page !== "presentation";
 
   return (
-    <div className="flex h-full min-h-screen flex-col">
-      {/* Consolidated header: single MEM Healthcare brand + main menu + console nav */}
-      <header className="sticky top-0 z-40 border-b border-white/60 bg-white/80 backdrop-blur-xl">
-        {/* Row 1 — brand (once), main menu centered, console action icons */}
+    <div className="flex h-full max-h-full flex-col overflow-hidden">
+      {/* Consolidated header: single MEM Healthcare brand + console nav */}
+      <header className="z-40 shrink-0 border-b border-white/60 bg-white/80 backdrop-blur-xl">
+        {/* Row 1 — brand (once), console action icons */}
         <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
           <button
             onClick={() => go("presentation")}
@@ -66,16 +66,16 @@ export default function App() {
         )}
       </header>
 
-      {/* Page content */}
-      <div className="min-h-0 flex-1">
+      {/* Page content — fills the space between the fixed header and footer */}
+      <div className="min-h-0 flex-1 overflow-hidden">
         {page === "presentation" && <Presentation />}
         {page === "home" && <Home />}
         {page === "mapas" && <Mapas />}
         {page === "estadisticas" && <Estadisticas />}
       </div>
 
-      {/* Main menu — moved below the right-side content, styled like the Salesforce tabs */}
-      <footer className="sticky bottom-0 z-40 border-t border-white/60 bg-white/80 backdrop-blur-xl">
+      {/* Main menu — pinned to the bottom of the viewport on every page */}
+      <footer className="z-50 shrink-0 border-t border-white/60 bg-white/80 backdrop-blur-xl">
         <nav className="flex w-full items-center justify-end gap-1 overflow-x-auto px-4 py-2 sm:px-6">
           {NAV.map(({ id, label }) => (
             <button
