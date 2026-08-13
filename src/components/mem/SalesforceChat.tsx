@@ -1,5 +1,5 @@
 import { Fragment, type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { Minus, Send, X } from "lucide-react";
+import { Check, Loader2, Minus, Send, X } from "lucide-react";
 import chatIcon from "../../assets/slds-chat/chat.svg";
 import endChatIcon from "../../assets/slds-chat/end-chat.svg";
 import doctypeImageIcon from "../../assets/slds-chat/doctype-image.svg";
@@ -7,7 +7,13 @@ import downloadIcon from "../../assets/slds-chat/download.svg";
 import warningIcon from "../../assets/slds-chat/warning.svg";
 import drArmando from "../../assets/dr-armando.png";
 import avatar from "../../assets/avatar.png";
-import { HERA_TRANSCRIPT, type ChatItem, type ChatText } from "../../data/hera-chat";
+import {
+  HERA_TRANSCRIPT,
+  KNOWLEDGE_DOWNLOADS,
+  type ChatItem,
+  type ChatText,
+  type KnowledgeDownloadId,
+} from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
 
 const AVATARS: Record<string, string> = {
@@ -21,6 +27,40 @@ function SldsIcon({ src, size = 16, alt = "" }: { src: string; size?: number; al
       <img src={src} alt={alt} width={size} height={size} className="h-full w-full object-contain" />
     </span>
   );
+}
+
+async function downloadKnowledgeCsv(id: KnowledgeDownloadId) {
+  const asset = KNOWLEDGE_DOWNLOADS[id];
+  const response = await fetch(asset.href);
+  if (!response.ok) throw new Error(`No se pudo descargar ${asset.filename}`);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = asset.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function useKnowledgeDownload() {
+  const [status, setStatus] = useState<"idle" | "downloading" | "done">("idle");
+
+  const start = async (id: KnowledgeDownloadId) => {
+    if (status === "downloading") return;
+    setStatus("downloading");
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 480));
+      await downloadKnowledgeCsv(id);
+      setStatus("done");
+      window.setTimeout(() => setStatus("idle"), 1800);
+    } catch {
+      setStatus("idle");
+    }
+  };
+
+  return { status, start };
 }
 
 function initialsBubble(name: string, initials?: string) {
@@ -120,24 +160,40 @@ function OutboundMessage({
 
 function FileMessage({ item }: { item: Extract<ChatItem, { kind: "file" }> }) {
   const outbound = item.direction === "outbound";
+  const { status, start } = useKnowledgeDownload();
+  const busy = status === "downloading";
+  const done = status === "done";
+
   return (
     <li className={`flex ${outbound ? "justify-end" : "items-end gap-2"}`}>
       {!outbound && <span className="h-8 w-8 shrink-0" />}
-      <div className={`min-w-0 ${outbound ? "max-w-[min(100%,20.5rem)]" : "max-w-[min(100%,20.5rem)] flex-1"}`}>
-        <div
-          className={`overflow-hidden rounded-[12px] border border-[#c9c9c9] bg-white ${
+      <div className="min-w-0 max-w-[min(100%,20.5rem)]">
+        <button
+          type="button"
+          onClick={() => void start(item.downloadId)}
+          disabled={busy}
+          aria-label={`Descargar ${item.filename}`}
+          className={`flex w-full items-center gap-2 rounded-[12px] border border-[#c9c9c9] bg-white px-2 py-2 text-left transition hover:border-[#0250d9] hover:bg-[#f8fafc] disabled:opacity-70 ${
             outbound ? "rounded-br-none" : "rounded-bl-none"
           }`}
         >
-          <div className="flex items-center gap-2 px-2 py-2">
-            <SldsIcon src={doctypeImageIcon} size={28} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">{item.filename}</p>
-              <p className="text-[12px] leading-4 text-[#2e2e2e]">{item.subtitle}</p>
-            </div>
-            <SldsIcon src={downloadIcon} size={16} />
+          <SldsIcon src={doctypeImageIcon} size={28} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">{item.filename}</p>
+            <p className="text-[12px] leading-4 text-[#2e2e2e]">
+              {busy ? "Descargando…" : done ? "Descargado" : item.subtitle}
+            </p>
           </div>
-        </div>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f3f3f3] text-[#0250d9]">
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : done ? (
+              <Check className="h-4 w-4 text-[#2e844a]" />
+            ) : (
+              <SldsIcon src={downloadIcon} size={16} />
+            )}
+          </span>
+        </button>
         <p className={`pt-0.5 text-[10px] leading-[14px] text-[#747474] ${outbound ? "text-right" : ""}`}>
           {item.name} • {item.time}
         </p>
@@ -163,6 +219,38 @@ function FieldsCard({ item }: { item: Extract<ChatItem, { kind: "fields" }> }) {
   );
 }
 
+function SlackAction({
+  downloadId,
+  children,
+  variant,
+}: {
+  downloadId: KnowledgeDownloadId;
+  children: string;
+  variant: "primary" | "secondary";
+}) {
+  const { status, start } = useKnowledgeDownload();
+  const busy = status === "downloading";
+  const done = status === "done";
+  const asset = KNOWLEDGE_DOWNLOADS[downloadId];
+
+  return (
+    <button
+      type="button"
+      onClick={() => void start(downloadId)}
+      disabled={busy}
+      aria-label={`Descargar ${asset.filename}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition disabled:opacity-70 ${
+        variant === "primary"
+          ? "bg-[#03234d] text-white hover:bg-[#053a7a]"
+          : "border border-[#c9c9c9] font-medium text-[#747474] hover:border-[#03234d] hover:text-[#03234d]"
+      }`}
+    >
+      {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : done ? <Check className="h-3 w-3" /> : null}
+      {busy ? "Descargando…" : done ? "Descargado" : children}
+    </button>
+  );
+}
+
 function SlackCard({ time }: { time: string }) {
   return (
     <li className="flex justify-end">
@@ -180,12 +268,12 @@ function SlackCard({ time }: { time: string }) {
               Confianza_AUQ: 0.985 / Umbral: 0.999 · Freno tanh: ACTIVO · Camas libres: 18/100
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="inline-flex rounded-full bg-[#03234d] px-2.5 py-1 text-[11px] font-semibold text-white">
+              <SlackAction downloadId="vigilancia" variant="primary">
                 Sí, Apartar 50 Camas UCI
-              </span>
-              <span className="inline-flex rounded-full border border-[#c9c9c9] px-2.5 py-1 text-[11px] font-medium text-[#747474]">
+              </SlackAction>
+              <SlackAction downloadId="pronam" variant="secondary">
                 Rechazar
-              </span>
+              </SlackAction>
             </div>
           </div>
         </div>

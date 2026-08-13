@@ -16,6 +16,8 @@ export type ChatText = {
   initials?: string;
 };
 
+export type KnowledgeDownloadId = "pronam" | "vigilancia";
+
 export type ChatFile = {
   kind: "file";
   direction: "inbound" | "outbound";
@@ -23,6 +25,7 @@ export type ChatFile = {
   time: string;
   filename: string;
   subtitle: string;
+  downloadId: KnowledgeDownloadId;
 };
 
 export type ChatFields = {
@@ -41,6 +44,22 @@ export type ChatAudit = {
 };
 
 export type ChatItem = ChatBookend | ChatText | ChatFile | ChatFields | ChatSlack | ChatAudit;
+
+export const KNOWLEDGE_DOWNLOADS: Record<
+  KnowledgeDownloadId,
+  { href: string; filename: string; title: string }
+> = {
+  pronam: {
+    href: "/knowledge/Articulo_1_PRONAM.csv",
+    filename: "Articulo_1_PRONAM.csv",
+    title: "Protocolos Nacionales de Atención Médica (PRONAM)",
+  },
+  vigilancia: {
+    href: "/knowledge/Articulo_2_Vigilancia_Epidemiologica.csv",
+    filename: "Articulo_2_Vigilancia_Epidemiologica.csv",
+    title: "Vigilancia Epidemiológica y Sistemas de Alertamiento",
+  },
+};
 
 export const HERA_TRANSCRIPT: ChatItem[] = [
   {
@@ -69,8 +88,6 @@ export const HERA_TRANSCRIPT: ChatItem[] = [
       { object: "Cama_UCI__c", detail: "100 total · 18 libres" },
       { object: "Alerta_Epidemiologica__c", detail: "Estado__c → PENDIENTE" },
       { object: "MEM_Start_Event__e", detail: "disparo" },
-      { object: "MEM_ClinicalVectorService.cls", detail: "Apex" },
-      { object: "ExecutiveFunctionBenchmark.cls", detail: "Apex" },
     ],
   },
   {
@@ -82,23 +99,31 @@ export const HERA_TRANSCRIPT: ChatItem[] = [
     kind: "outbound",
     name: "Agente HERA",
     time: "9:13 AM",
-    text: "Consultando base de conocimiento RAG 'Epidemic_Rules_KB'... Protocolo de Emergencia Sanitaria Nivel 2 identificado: Se requiere validación humana obligatoria (Human-in-the-Loop). Procedo a iniciar comunicación con el Doctor en Turno de la Sede Norte.",
+    text: "Consultando base de conocimiento RAG... Protocolo de Emergencia Sanitaria Nivel 2 identificado: Se requiere validación humana obligatoria (Human-in-the-Loop). Adjunto los artículos de Knowledge. Procedo a iniciar comunicación con el Doctor en Turno de la Sede Norte.",
   },
   {
     kind: "file",
     direction: "outbound",
     name: "Agente HERA",
     time: "9:13 AM",
-    filename: "Epidemic_Rules_KB",
-    subtitle: "UCI > 80% → escalar al Doctor antes de bloquear.",
+    filename: "Articulo_2_Vigilancia_Epidemiologica.csv",
+    subtitle: "Vigilancia Epidemiológica y Sistemas de Alertamiento",
+    downloadId: "vigilancia",
+  },
+  {
+    kind: "file",
+    direction: "outbound",
+    name: "Agente HERA",
+    time: "9:13 AM",
+    filename: "Articulo_1_PRONAM.csv",
+    subtitle: "Protocolos Nacionales de Atención Médica (PRONAM)",
+    downloadId: "pronam",
   },
   {
     kind: "fields",
     items: [
-      { object: "KnowledgeArticleVersion", detail: "Epidemic_Rules_KB" },
+      { object: "KnowledgeArticleVersion", detail: "2 artículos Knowledge" },
       { object: "Alerta_Epidemiologica__c", detail: "PENDIENTE_ESCALAMIENTO" },
-      { object: "KavRag.cls", detail: "Apex" },
-      { object: "RAGKnowledge.cls", detail: "Apex" },
     ],
   },
   {
@@ -125,8 +150,6 @@ export const HERA_TRANSCRIPT: ChatItem[] = [
     items: [
       { object: "MEM_Start_Event__e", detail: "payload JSON cifrado" },
       { object: "Alerta_Epidemiologica__c", detail: "Mensaje_Traza__c escrito" },
-      { object: "FalseInferenceGateway.cls", detail: "Apex" },
-      { object: "ApexCalloutService.cls", detail: "Apex" },
     ],
   },
   {
