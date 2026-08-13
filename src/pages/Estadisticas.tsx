@@ -18,6 +18,7 @@ import {
 import { TrendingUp, TrendingDown, Activity, BedDouble, Timer, ShieldCheck } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
 import { VideoStage } from "../components/mem/VideoStage";
+import { SLACK_CLIENT_URL } from "../lib/mem-slack";
 import {
   KPIS,
   ENDEMIC_CHANNEL,
@@ -92,7 +93,8 @@ export function Estadisticas() {
         {/* Light legibility scrim — keeps the video visible behind the frosted cards */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/45 via-white/15 to-transparent" />
 
-        <div className="relative h-full overflow-y-auto overflow-x-hidden pt-3 pr-3 pb-3 pl-sidebar sm:pt-6 sm:pr-6 sm:pb-6">
+        <div className="relative flex h-full min-h-0 flex-col gap-3 overflow-hidden pt-3 pr-3 pb-3 pl-sidebar sm:pt-6 sm:pr-6 sm:pb-6 md:flex-row">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           {/* Header */}
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -267,6 +269,19 @@ export function Estadisticas() {
               </div>
             </Panel>
           </div>
+          </div>
+
+          <aside className="flex h-[min(46dvh,22rem)] min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-white/60 bg-indigo-200/40 shadow-lg backdrop-blur-md md:h-full md:w-[min(26rem,38%)]">
+            <div className="flex shrink-0 items-center gap-2 border-b border-white/50 px-3 py-2">
+              <span className="text-sm font-bold text-mem-navy">Slack</span>
+            </div>
+            <iframe
+              src={SLACK_CLIENT_URL}
+              title="Slack"
+              className="h-full min-h-0 w-full flex-1 bg-white"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </aside>
         </div>
       </VideoStage>
     </ConsoleLayout>

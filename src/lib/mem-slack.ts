@@ -1,5 +1,8 @@
 export const MEM_AWU_TX = "AWU-SEDE-NORTE-50";
 export const MEM_HOSPITAL_ID = "001xx000003DGw2AAG";
+export const SLACK_TEAM_ID = "T06E6HP8A2W";
+export const SLACK_CHANNEL = "D0BNHUA8R7D";
+export const SLACK_CLIENT_URL = `https://app.slack.com/client/${SLACK_TEAM_ID}/${SLACK_CHANNEL}`;
 
 export type KnowledgePayload = {
   source: string;
