@@ -4,12 +4,14 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { memApiMiddleware } from "./server/mem-api.js";
+import { mcpMiddleware } from "./server/mcp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, "dist");
 
 const app = express();
 
+app.use(mcpMiddleware);
 app.use(memApiMiddleware);
 
 // Serve static assets produced by `vite build`.

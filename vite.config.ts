@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 import { memApiMiddleware } from './server/mem-api.js';
+import { mcpMiddleware } from './server/mcp.js';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
@@ -14,6 +15,7 @@ export default defineConfig(({mode}) => {
       {
         name: 'mem-api',
         configureServer(server) {
+          server.middlewares.use(mcpMiddleware);
           server.middlewares.use(memApiMiddleware);
         },
       },

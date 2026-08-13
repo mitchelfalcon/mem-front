@@ -1,6 +1,6 @@
 # MEM Healthcare
 
-Frontend (Vite + React + TypeScript + Tailwind) for the **MEM Healthcare** console — an immersive Salesforce-style dashboard with Presentation, Home, Mapas and Estadísticas pages.
+Frontend (Vite + React + TypeScript + Tailwind) for the **MEM Healthcare** console — an immersive Salesforce-style dashboard with Presentation, Home, Mapas, Estadísticas and Slack pages.
 
 ## Requirements
 
@@ -53,6 +53,23 @@ HITL Slack → Salesforce (`MEM_SlackApprovalService`):
 - Deploy `salesforce/classes/MEM_SlackApprovalService.cls` to the org
 
 Slack MCP for Cursor: `.cursor/mcp.json` points at `https://mcp.slack.com/mcp`. Authenticate Slack (and Salesforce) from Cursor Settings → MCP.
+
+### Salesforce Agentforce → Heroku MCP (`memhealthcare`)
+
+Salesforce API names reject hyphens. Register the server as **`memhealthcare`** (not `mem-healthcare`).
+
+| Field | Value |
+| --- | --- |
+| MCP Server Name | `memhealthcare` |
+| Description | Heroku MCP Server |
+| Server URL | `https://memhealthcare-app-01f3bfd4e4a3.herokuapp.com/` |
+| MCP endpoint | `https://memhealthcare-app-01f3bfd4e4a3.herokuapp.com/mcp` |
+| Authentication Method | OAuth 2.0 |
+| Identity Provider URL | `https://id.heroku.com` |
+| Scope | `global` |
+| Client ID / Client Secret | Heroku OAuth app — set as `HEROKU_OAUTH_CLIENT_ID` / `HEROKU_OAUTH_CLIENT_SECRET`, never commit them |
+
+`HEROKU_API_KEY` is for the Heroku CLI / Platform API only. Set it locally or with `heroku config:set`; do not put it in git.
 
 ## Notes
 
