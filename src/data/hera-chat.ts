@@ -65,6 +65,16 @@ export const KNOWLEDGE_DOWNLOADS: Record<
   },
 };
 
+export const HERA_EMPTY_TRANSCRIPT: ChatItem[] = [
+  {
+    kind: "bookend",
+    icon: "chat",
+    prefix: "Chat started by ",
+    name: "Agente HERA",
+    suffix: " • listo",
+  },
+];
+
 export const HERA_TRANSCRIPT: ChatItem[] = [
   {
     kind: "bookend",

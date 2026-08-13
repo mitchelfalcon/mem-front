@@ -8,14 +8,14 @@ import warningIcon from "../../assets/slds-chat/warning.svg";
 import drArmando from "../../assets/dr-armando.png";
 import avatar from "../../assets/avatar.png";
 import {
-  HERA_TRANSCRIPT,
+  HERA_EMPTY_TRANSCRIPT,
   KNOWLEDGE_DOWNLOADS,
   type ChatItem,
   type ChatText,
   type KnowledgeDownloadId,
 } from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
-import { authorizeAwu, startHeraSession, type ChatStartResponse } from "../../lib/mem-slack";
+import { authorizeAwu, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -470,7 +470,7 @@ export function SalesforceChat() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [draft, setDraft] = useState("");
-  const [items, setItems] = useState<ChatItem[]>(HERA_TRANSCRIPT);
+  const [items, setItems] = useState<ChatItem[]>(HERA_EMPTY_TRANSCRIPT);
   const [session, setSession] = useState<ChatStartResponse | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -479,30 +479,8 @@ export function SalesforceChat() {
   const visible = open && !minimized;
 
   useEffect(() => {
-    if (!visible) return;
-    const cached = sessionStorage.getItem("mem-hera-session");
-    if (cached) {
-      try {
-        setSession(JSON.parse(cached) as ChatStartResponse);
-        return;
-      } catch {
-        sessionStorage.removeItem("mem-hera-session");
-      }
-    }
-    let cancelled = false;
-    void startHeraSession()
-      .then((result) => {
-        if (cancelled) return;
-        setSession(result);
-        sessionStorage.setItem("mem-hera-session", JSON.stringify(result));
-      })
-      .catch(() => {
-        if (!cancelled) setSession({ ok: false, tx: "AWU-SEDE-NORTE-50", error: "No se pudo iniciar HERA" });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [visible]);
+    sessionStorage.removeItem("mem-hera-session");
+  }, []);
 
   useEffect(() => {
     if (!visible) return;

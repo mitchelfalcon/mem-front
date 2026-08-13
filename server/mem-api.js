@@ -563,9 +563,8 @@ async function slackConversation(req) {
       liveError = history.error || "conversations.history falló";
     }
   }
-  const seeded = localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)];
-  if (!localSlackMessages.length) localSlackMessages = seeded;
-  const messages = live.length ? [...live, ...localSlackMessages.filter((m) => m.ts === "hitl-auq" || m.local)] : localSlackMessages;
+  const seeded = localSlackMessages;
+  const messages = live.length ? [...live, ...localSlackMessages.filter((m) => m.local)] : localSlackMessages;
   return {
     ok: true,
     channel,
@@ -651,7 +650,7 @@ export async function memApiMiddleware(req, res, next) {
         markdown: canvasMarkdown({ ...ctx, decision }),
       });
       localSlackMessages = [
-        ...(localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)]),
+        ...localSlackMessages,
         {
           ts: `decision-${Date.now()}`,
           user: "MEM Healthcare — Gran Maestro AUQ",
@@ -697,6 +696,14 @@ export async function memApiMiddleware(req, res, next) {
     return;
   }
 
+  if (req.method === "POST" && (url.pathname === "/api/mem/slack/clear" || url.pathname === "/api/mem/chat/clear")) {
+    lastDispatch = null;
+    lastCanvasId = process.env.SLACK_CANVAS_ID || null;
+    localSlackMessages = [];
+    sendJson(res, 200, { ok: true, cleared: true, messages: [] });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/api/mem/slack/conversation") {
     try {
       sendJson(res, 200, await slackConversation(req));
@@ -724,7 +731,7 @@ export async function memApiMiddleware(req, res, next) {
         text,
         local: true,
       };
-      localSlackMessages = [...(localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)]), message];
+      localSlackMessages = [...localSlackMessages, message];
       sendJson(res, 200, { ok: true, posted: Boolean(slack.posted), message, slack });
     } catch (error) {
       sendJson(res, 500, { ok: false, error: String(error?.message || error) });
