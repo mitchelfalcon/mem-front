@@ -1,10 +1,27 @@
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const APEX_DIR = path.join(__dirname, "..", "salesforce", "classes");
+
 const HOSPITAL_ID = "001xx000003DGw2AAG";
 const DEFAULT_TX = "AWU-SEDE-NORTE-50";
-const DEFAULT_CHANNEL = "#urgencias-epidemiologia";
+const DEFAULT_CHANNEL = "#mem-urgencias-epidemiologia";
+const SF_API = process.env.SF_API_VERSION || "62.0";
+
+const LOCAL_APEX = [
+  "MEM_OrchestratorController",
+  "MEM_RAG_KnowledgeService",
+  "ChatBotController",
+  "DataCloudMapController",
+  "MEM_Audit_TraceEngine",
+  "MEM_ClinicalVectorService",
+  "MEM_LaplacePrivacyService",
+];
 
 const APPROVE_BODY =
   '["ÉXITO": "AWU Aprobada por Director Médico. 50 Camas UCI Bloqueadas en red."]';
@@ -25,11 +42,254 @@ function publicBase(req) {
   return `${proto}://${host}`;
 }
 
+function readLocalApex() {
+  return LOCAL_APEX.map((name) => {
+    const filePath = path.join(APEX_DIR, `${name}.cls`);
+    const body = fs.existsSync(filePath) ? fs.readFileSync(filePath, "utf8") : "";
+    return { name, filename: `${name}.cls`, bytes: Buffer.byteLength(body, "utf8"), body };
+  }).filter((item) => item.body.length > 0);
+}
+
+function knowledgeAndTrace() {
+  const tanhVal = Math.tanh(8.7 / 10);
+  const metricaTanh = Number((((tanhVal + 1) / 2) * 100).toFixed(2));
+  return {
+    knowledge: {
+      source: "MEM_RAG_KnowledgeService",
+      searchTerm: "Protocolo Emergencia Neumologia Brote Atipico",
+      protocoloSanitarioRag:
+        "Vigilancia Epidemiológica y Sistemas de Alertamiento — El SINAVE coordina 4 fases de vigilancia y emite Avisos, Alertas y APV según el nivel de riesgo.",
+      articles: [
+        {
+          id: "vigilancia",
+          title: "Vigilancia Epidemiológica y Sistemas de Alertamiento",
+          filename: "Articulo_2_Vigilancia_Epidemiologica.csv",
+        },
+        {
+          id: "pronam",
+          title: "Protocolos Nacionales de Atención Médica (PRONAM)",
+          filename: "Articulo_1_PRONAM.csv",
+        },
+      ],
+      camasUciDisponibles: 18,
+      porcentajeMetricaTanh: metricaTanh,
+      auqScore: 0.985,
+      statusEjecucion: "ESCALADO_HUMANO_SLACK",
+    },
+    trace: {
+      source: "MEM_Audit_TraceEngine.logAuditTrace",
+      hospitalId: HOSPITAL_ID,
+      actor: "El_Gran_Maestro",
+      note: "Actualizado por agente de IA.",
+      auditId: "AUD-883",
+      auq: 0.985,
+      brake: true,
+      dpHash: "[HASH_DP_883]",
+      privacy: "ACTIVE_LAPLACIAN_DP_EPSILON_0.1",
+      event: "MEM_Clinical_Audit__e",
+    },
+  };
+}
+
+function ragSlackBlocks({ tx, approveUrl, rejectUrl, knowledge, trace }) {
+  return [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: "🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO",
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text:
+          `*Sede Hospitalaria:* Sede Norte (\`${HOSPITAL_ID}\`)\n` +
+          "*Estado del Sistema:* Freno Matemático tanh Activado por Incertidumbre Epistémica.\n" +
+          `*tx:* \`${tx}\``,
+      },
+    },
+    { type: "divider" },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Camas UCI Disponibles:*\n\`${knowledge.camasUciDisponibles} unidades libres\`` },
+        { type: "mrkdwn", text: `*Métrica Función tanh:*\n\`${knowledge.porcentajeMetricaTanh}% saturación\`` },
+        { type: "mrkdwn", text: `*Confianza Agéntica (AUQ):*\n\`${(knowledge.auqScore * 100).toFixed(2)}% (Exigido ≥ 99.9%)\`` },
+        { type: "mrkdwn", text: "*Privacidad Diferencial:*\n`Activa (Ruido Laplaciano)`" },
+      ],
+    },
+    { type: "divider" },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*Consulta RAG Knowledge (Protocolo Sector Salud):*\n_${knowledge.protocoloSanitarioRag}_`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text:
+          `*Trazabilidad:* \`${trace.source}\` · actor *${trace.actor}*\n` +
+          `${trace.note} · ${trace.event} ${trace.auditId} · ${trace.dpHash}`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text:
+          "*Apex local enviado:*\n" +
+          LOCAL_APEX.map((name) => `• \`${name}.cls\``).join("\n"),
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text:
+          "*DECISIONES DIRECTIVAS A OBSERVAR:*\n" +
+          "1. Autorizar bloqueo transaccional de 50 camas UCI vía AWU.\n" +
+          "2. Rechazar alerta y mantener régimen de admisión estacional.",
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          style: "danger",
+          text: { type: "plain_text", text: "🏥 AUTORIZAR BLOQUEO UCI (AWU)", emoji: true },
+          url: approveUrl,
+        },
+        {
+          type: "button",
+          text: { type: "plain_text", text: "❌ RECHAZAR & MANTENER ESTACIONAL", emoji: true },
+          url: rejectUrl,
+        },
+      ],
+    },
+  ];
+}
+
+async function postSlackMessage({ channel, text, blocks, threadTs }) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) return { ok: false, posted: false, reason: "SLACK_BOT_TOKEN no configurado", channel, blocks };
+  const response = await fetch("https://slack.com/api/chat.postMessage", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify({ channel, text, blocks, thread_ts: threadTs, unfurl_links: false }),
+  });
+  const data = await response.json();
+  return {
+    ok: Boolean(data.ok),
+    posted: Boolean(data.ok),
+    channel,
+    ts: data.ts,
+    error: data.error,
+    blocks,
+  };
+}
+
+async function uploadApexToSlack({ channel, threadTs, files }) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) {
+    return files.map((file) => ({ filename: file.filename, ok: false, reason: "SLACK_BOT_TOKEN no configurado" }));
+  }
+  const results = [];
+  for (const file of files) {
+    const form = new FormData();
+    form.append("channels", channel.replace(/^#/, ""));
+    form.append("filename", file.filename);
+    form.append("filetype", "text");
+    form.append("title", file.filename);
+    form.append("content", file.body);
+    form.append("initial_comment", `Apex local · ${file.filename}`);
+    if (threadTs) form.append("thread_ts", threadTs);
+    const response = await fetch("https://slack.com/api/files.upload", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const data = await response.json();
+    results.push({ filename: file.filename, ok: Boolean(data.ok), error: data.error });
+  }
+  return results;
+}
+
+function sfBase() {
+  return process.env.SF_INSTANCE_URL?.replace(/\/$/, "") || "";
+}
+
+async function sfFetch(pathname, options = {}) {
+  const instance = sfBase();
+  if (!instance || !process.env.SF_ACCESS_TOKEN) {
+    throw new Error("SF_INSTANCE_URL o SF_ACCESS_TOKEN no configurados");
+  }
+  const response = await fetch(`${instance}${pathname}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${process.env.SF_ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const text = await response.text();
+  let json = null;
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = { raw: text };
+  }
+  return { ok: response.ok, status: response.status, json };
+}
+
+async function upsertApexToSalesforce(files) {
+  if (!sfBase() || !process.env.SF_ACCESS_TOKEN) {
+    return {
+      ok: false,
+      reason: "Salesforce org no autenticada (SF_INSTANCE_URL / SF_ACCESS_TOKEN)",
+      classes: files.map((file) => ({ name: file.name, ok: false })),
+    };
+  }
+  const results = [];
+  for (const file of files) {
+    try {
+      const query = encodeURIComponent(`SELECT Id, Name FROM ApexClass WHERE Name = '${file.name}'`);
+      const found = await sfFetch(`/services/data/v${SF_API}/tooling/query/?q=${query}`);
+      const existingId = found.json?.records?.[0]?.Id;
+      if (existingId) {
+        const patched = await sfFetch(`/services/data/v${SF_API}/tooling/sobjects/ApexClass/${existingId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ Body: file.body }),
+        });
+        results.push({ name: file.name, ok: patched.ok, op: "update", status: patched.status, detail: patched.json });
+      } else {
+        const created = await sfFetch(`/services/data/v${SF_API}/tooling/sobjects/ApexClass`, {
+          method: "POST",
+          body: JSON.stringify({ Name: file.name, Body: file.body, ApiVersion: Number(SF_API) }),
+        });
+        results.push({ name: file.name, ok: created.ok, op: "create", status: created.status, detail: created.json });
+      }
+    } catch (error) {
+      results.push({ name: file.name, ok: false, error: String(error?.message || error) });
+    }
+  }
+  return { ok: results.every((row) => row.ok), classes: results };
+}
+
 function salesforceAuthorizeUrl(tx, action) {
-  const instance = process.env.SF_INSTANCE_URL?.replace(/\/$/, "");
+  const instance = sfBase();
   if (!instance) return null;
-  const path = process.env.SF_AUTHORIZE_PATH || "/services/apexrest/mem/v1/authorize/";
-  const url = new URL(path, `${instance}/`);
+  const restPath = process.env.SF_AUTHORIZE_PATH || "/services/apexrest/mem/v1/authorize/";
+  const url = new URL(restPath, `${instance}/`);
   url.searchParams.set("tx", tx);
   url.searchParams.set("action", action);
   return url.toString();
@@ -45,12 +305,8 @@ async function callSalesforceAuthorize(tx, action) {
       body: action === "APPROVE" ? APPROVE_BODY : REJECT_BODY,
     };
   }
-
   const headers = { Accept: "application/json, text/plain;q=0.9,*/*;q=0.8" };
-  if (process.env.SF_ACCESS_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.SF_ACCESS_TOKEN}`;
-  }
-
+  if (process.env.SF_ACCESS_TOKEN) headers.Authorization = `Bearer ${process.env.SF_ACCESS_TOKEN}`;
   const response = await fetch(url, { method: "GET", headers });
   const body = await response.text();
   return {
@@ -59,77 +315,6 @@ async function callSalesforceAuthorize(tx, action) {
     status: response.status,
     url,
     body: body || (action === "APPROVE" ? APPROVE_BODY : REJECT_BODY),
-  };
-}
-
-function alertBlocks({ tx, approveUrl, rejectUrl }) {
-  return [
-    {
-      type: "header",
-      text: { type: "plain_text", text: "🚨 ALERTA EPIDEMIOLÓGICA – SEDE NORTE", emoji: true },
-    },
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text:
-          "*Notas:* 1,247 · *Riesgo:* Endemia Respiratoria (p90 = 87.05%)\n" +
-          "*Confianza_AUQ:* 0.985 / Umbral: 0.999 · *Freno tanh:* ACTIVO · *Camas libres:* 18/100\n" +
-          `*Hospital:* \`${HOSPITAL_ID}\` · *tx:* \`${tx}\``,
-      },
-    },
-    {
-      type: "actions",
-      elements: [
-        {
-          type: "button",
-          style: "primary",
-          text: { type: "plain_text", text: "Sí, Apartar 50 Camas UCI", emoji: true },
-          url: approveUrl,
-        },
-        {
-          type: "button",
-          text: { type: "plain_text", text: "Rechazar", emoji: true },
-          url: rejectUrl,
-        },
-      ],
-    },
-  ];
-}
-
-async function postSlackAlert({ tx, approveUrl, rejectUrl }) {
-  const token = process.env.SLACK_BOT_TOKEN;
-  const channel = process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
-  const blocks = alertBlocks({ tx, approveUrl, rejectUrl });
-  const text =
-    "🚨 ALERTA EPIDEMIOLÓGICA – SEDE NORTE. ¿Autoriza el apartado de 50 camas UCI?";
-
-  if (!token) {
-    return {
-      ok: false,
-      posted: false,
-      reason: "SLACK_BOT_TOKEN no configurado",
-      channel,
-      blocks,
-    };
-  }
-
-  const response = await fetch("https://slack.com/api/chat.postMessage", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json; charset=utf-8",
-    },
-    body: JSON.stringify({ channel, text, blocks, unfurl_links: false }),
-  });
-  const data = await response.json();
-  return {
-    ok: Boolean(data.ok),
-    posted: Boolean(data.ok),
-    channel,
-    ts: data.ts,
-    error: data.error,
-    blocks,
   };
 }
 
@@ -152,25 +337,45 @@ function readJsonBody(req) {
   });
 }
 
+async function startChatDispatch({ tx, approveUrl, rejectUrl }) {
+  const files = readLocalApex();
+  const { knowledge, trace } = knowledgeAndTrace();
+  const channel = process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
+  const blocks = ragSlackBlocks({ tx, approveUrl, rejectUrl, knowledge, trace });
+  const slack = await postSlackMessage({
+    channel,
+    text: "🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO — Sede Norte. Apex local adjunto.",
+    blocks,
+  });
+  const uploads = await uploadApexToSlack({ channel, threadTs: slack.ts, files });
+  const salesforce = await upsertApexToSalesforce(files);
+  return {
+    ok: true,
+    tx,
+    hospitalId: HOSPITAL_ID,
+    channel,
+    classes: files.map(({ name, filename, bytes }) => ({ name, filename, bytes })),
+    knowledge,
+    trace,
+    slack: { ...slack, uploads },
+    salesforce,
+    approveUrl,
+    rejectUrl,
+  };
+}
+
 export async function memApiMiddleware(req, res, next) {
   const url = new URL(req.url || "/", "http://localhost");
 
-  if (req.method === "POST" && url.pathname === "/api/mem/slack/alert") {
+  if (req.method === "POST" && (url.pathname === "/api/mem/chat/start" || url.pathname === "/api/mem/slack/alert")) {
     try {
       const body = await readJsonBody(req);
       const tx = String(body.tx || DEFAULT_TX);
       const base = publicBase(req);
       const approveUrl = `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=APPROVE`;
       const rejectUrl = `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=REJECT`;
-      const slack = await postSlackAlert({ tx, approveUrl, rejectUrl });
-      sendJson(res, slack.ok || !process.env.SLACK_BOT_TOKEN ? 200 : 502, {
-        ok: slack.ok,
-        tx,
-        hospitalId: HOSPITAL_ID,
-        approveUrl,
-        rejectUrl,
-        slack,
-      });
+      const payload = await startChatDispatch({ tx, approveUrl, rejectUrl });
+      sendJson(res, 200, payload);
     } catch (error) {
       sendJson(res, 500, { ok: false, error: String(error?.message || error) });
     }

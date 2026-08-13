@@ -15,7 +15,7 @@ import {
   type KnowledgeDownloadId,
 } from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
-import { authorizeAwu, sendEpidemiologicalAlert } from "../../lib/mem-slack";
+import { authorizeAwu, startHeraSession, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -265,49 +265,18 @@ function SlackAction({
   );
 }
 
-function SlackCard({ time }: { time: string }) {
-  const [sendState, setSendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [sendDetail, setSendDetail] = useState("Bot Slack · MEM Agent · #urgencias-epidemiologia");
+function SlackCard({ time, session }: { time: string; session: ChatStartResponse | null }) {
   const [decision, setDecision] = useState<string | null>(null);
   const [locked, setLocked] = useState(false);
+  const knowledge = session?.knowledge;
+  const slack = session?.slack;
+  const channel = session?.channel || slack?.channel || "#mem-urgencias-epidemiologia";
 
-  useEffect(() => {
-    const key = "mem-slack-alert-sent";
-    if (sessionStorage.getItem(key) === "1") {
-      setSendState("sent");
-      setSendDetail("Alerta ya enviada a #urgencias-epidemiologia");
-      return;
-    }
-    let cancelled = false;
-    setSendState("sending");
-    void sendEpidemiologicalAlert()
-      .then((result) => {
-        if (cancelled) return;
-        const posted = Boolean(result.slack?.posted || result.ok);
-        if (posted || result.slack?.reason) {
-          sessionStorage.setItem(key, "1");
-        }
-        if (result.slack?.posted) {
-          setSendState("sent");
-          setSendDetail(`Alerta enviada a ${result.slack.channel || "#urgencias-epidemiologia"}`);
-        } else if (result.slack?.reason) {
-          setSendState("sent");
-          setSendDetail(`${result.slack.reason}. Botones llaman /mem/v1/authorize`);
-        } else {
-          setSendState("error");
-          setSendDetail(result.slack?.error || result.error || "No se pudo enviar a Slack");
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setSendState("error");
-          setSendDetail("Error de red al enviar la alerta");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  let header = "MEM Healthcare — Gran Maestro AUQ · #mem-urgencias-epidemiologia";
+  if (!session) header = "Publicando Apex local y alerta AUQ en Slack…";
+  else if (slack?.posted) header = `Alerta actualizada en ${channel}`;
+  else if (slack?.reason) header = `${slack.reason} · mensaje RAG listo`;
+  else if (slack?.error) header = slack.error;
 
   return (
     <li className="flex justify-end">
@@ -315,18 +284,29 @@ function SlackCard({ time }: { time: string }) {
         <div className="overflow-hidden rounded-[12px] rounded-br-none border border-[#8c4b02] bg-white">
           <div className="flex items-start gap-2 border-b border-[#f3e5d7] bg-[#fff8f0] px-2.5 py-2">
             <SldsIcon src={warningIcon} size={16} />
-            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">{sendDetail}</p>
+            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">{header}</p>
           </div>
           <div className="space-y-2 px-2.5 py-2">
-            <p className="text-[13px] font-semibold leading-[18px] text-[#2e2e2e]">🚨 ALERTA EPIDEMIOLÓGICA – SEDE NORTE</p>
-            <p className="text-[13px] leading-[18px] text-[#2e2e2e]">
-              Notas: 1,247 · Riesgo: Endemia Respiratoria (p90 = 87.05%)
-              <br />
-              Confianza_AUQ: 0.985 / Umbral: 0.999 · Freno tanh: ACTIVO · Camas libres: 18/100
+            <p className="text-[13px] font-semibold leading-[18px] text-[#2e2e2e]">
+              🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO
             </p>
-            {sendState === "sending" && (
+            <p className="text-[13px] leading-[18px] text-[#2e2e2e]">
+              Sede Norte · Freno tanh activo por incertidumbre epistémica.
+              <br />
+              Camas UCI: {knowledge?.camasUciDisponibles ?? 18} libres · tanh {knowledge?.porcentajeMetricaTanh ?? 88.05}% · AUQ{" "}
+              {((knowledge?.auqScore ?? 0.985) * 100).toFixed(2)}% (exigido ≥ 99.9%)
+            </p>
+            <p className="text-[12px] leading-4 text-[#2e2e2e]">
+              RAG: {knowledge?.protocoloSanitarioRag ?? "Consultando Knowledge…"}
+            </p>
+            {!session && (
               <p className="flex items-center gap-1.5 text-[11px] text-[#747474]">
-                <Loader2 className="h-3 w-3 animate-spin" /> Publicando en Slack…
+                <Loader2 className="h-3 w-3 animate-spin" /> Enviando Apex local a Slack y Salesforce…
+              </p>
+            )}
+            {session?.classes && (
+              <p className="text-[11px] leading-4 text-[#747474]">
+                Apex local: {session.classes.map((item) => item.filename).join(", ")}
               </p>
             )}
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -339,7 +319,7 @@ function SlackCard({ time }: { time: string }) {
                   setDecision(body);
                 }}
               >
-                Sí, Apartar 50 Camas UCI
+                AUTORIZAR BLOQUEO UCI (AWU)
               </SlackAction>
               <SlackAction
                 action="REJECT"
@@ -350,27 +330,51 @@ function SlackCard({ time }: { time: string }) {
                   setDecision(body);
                 }}
               >
-                Rechazar
+                RECHAZAR Y MANTENER ESTACIONAL
               </SlackAction>
             </div>
             {decision && <p className="break-words text-[12px] leading-4 text-[#03234d]">{decision}</p>}
           </div>
         </div>
-        <p className="pt-0.5 text-right text-[10px] leading-[14px] text-[#747474]">Bot MEM Agent • {time}</p>
+        <p className="pt-0.5 text-right text-[10px] leading-[14px] text-[#747474]">Gran Maestro AUQ • {time}</p>
       </div>
     </li>
   );
 }
 
-function AuditCard({ time }: { time: string }) {
+function KnowledgeCard({ session }: { session: ChatStartResponse | null }) {
+  const knowledge = session?.knowledge;
+  return (
+    <li className="flex justify-end">
+      <div className="w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[12px] rounded-br-none border border-[#c9c9c9] bg-white">
+        <div className="border-b border-[#e5e5e5] bg-[#f3f3f3] px-2.5 py-2">
+          <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">Knowledge · RAG</p>
+          <p className="text-[10px] leading-[14px] text-[#747474]">{knowledge?.source ?? "MEM_RAG_KnowledgeService"}</p>
+        </div>
+        <div className="space-y-1.5 px-2.5 py-2 text-[12px] leading-4 text-[#2e2e2e]">
+          <p>{knowledge?.protocoloSanitarioRag ?? "Cargando protocolo sanitario…"}</p>
+          <p className="text-[#747474]">Búsqueda: {knowledge?.searchTerm ?? "—"}</p>
+          <p>Estado: {knowledge?.statusEjecucion ?? "ESCALADO_HUMANO_SLACK"}</p>
+          <p>Camas UCI disponibles: {knowledge?.camasUciDisponibles ?? "—"}</p>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function AuditCard({ time, session }: { time: string; session: ChatStartResponse | null }) {
+  const trace = session?.trace;
   const rows = [
-    ["Audit Record ID", "AUD-883"],
-    ["Estado__c", "COMPLETED_AWU_COMMITTED"],
-    ["Cama_UCI__c", "50 → Bloqueada_Epidemia"],
-    ["Confianza_AUQ__c", "0.985"],
-    ["Freno_Tanh_Activado__c", "true"],
-    ["Mensaje_Traza__c", "EMERGENCY_BED_RESERVATION_COMMIT"],
-    ["Firma_Criptografica_DP__c", "[HA…]"],
+    ["Trace", trace?.source ?? "MEM_Audit_TraceEngine.logAuditTrace"],
+    ["Audit Record ID", trace?.auditId ?? "AUD-883"],
+    ["Actor", trace?.actor ?? "El_Gran_Maestro"],
+    ["Hospital", trace?.hospitalId ?? "001xx000003DGw2AAG"],
+    ["AUQ", String(trace?.auq ?? 0.985)],
+    ["Freno tanh", String(trace?.brake ?? true)],
+    ["Evento", trace?.event ?? "MEM_Clinical_Audit__e"],
+    ["Firma DP", trace?.dpHash ?? "[HASH_DP_883]"],
+    ["Privacidad", trace?.privacy ?? "ACTIVE_LAPLACIAN_DP_EPSILON_0.1"],
+    ["Nota", trace?.note ?? "Actualizado por agente de IA."],
   ];
   return (
     <li className="flex justify-end">
@@ -379,8 +383,8 @@ function AuditCard({ time }: { time: string }) {
           <div className="flex items-center gap-2 border-b border-[#e5e5e5] bg-[#f3f3f3] px-2.5 py-2">
             <SldsIcon src={doctypeImageIcon} size={22} />
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">MEM_Clinical_Audit__c</p>
-              <p className="text-[10px] leading-[14px] text-[#747474]">MEM Clinical Audits · AUD-883</p>
+              <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">Trazabilidad</p>
+              <p className="text-[10px] leading-[14px] text-[#747474]">{trace?.source ?? "MEM_Audit_TraceEngine"} · {trace?.auditId ?? "AUD-883"}</p>
             </div>
           </div>
           <dl className="divide-y divide-[#e5e5e5]">
@@ -408,7 +412,7 @@ function isSameSpeaker(a: ChatItem | undefined, b: ChatItem | undefined) {
   );
 }
 
-function Transcript({ items }: { items: ChatItem[] }) {
+function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartResponse | null }) {
   return (
     <ul className="flex flex-col gap-3 px-3 py-3">
       {items.map((item, index) => {
@@ -419,8 +423,9 @@ function Transcript({ items }: { items: ChatItem[] }) {
             {item.kind === "bookend" && <Bookend item={item} />}
             {item.kind === "file" && <FileMessage item={item} />}
             {item.kind === "fields" && <FieldsCard item={item} />}
-            {item.kind === "slack" && <SlackCard time={item.time} />}
-            {item.kind === "audit" && <AuditCard time={item.time} />}
+            {item.kind === "knowledge" && <KnowledgeCard session={session} />}
+            {item.kind === "slack" && <SlackCard time={item.time} session={session} />}
+            {item.kind === "audit" && <AuditCard time={item.time} session={session} />}
             {item.kind === "inbound" && (
               <InboundMessage item={item} consecutive={grouped} hideMeta={hideMeta} />
             )}
@@ -443,6 +448,7 @@ export function SalesforceChat() {
   const [minimized, setMinimized] = useState(false);
   const [draft, setDraft] = useState("");
   const [items, setItems] = useState<ChatItem[]>(HERA_TRANSCRIPT);
+  const [session, setSession] = useState<ChatStartResponse | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleId = useId();
@@ -451,9 +457,35 @@ export function SalesforceChat() {
 
   useEffect(() => {
     if (!visible) return;
+    const cached = sessionStorage.getItem("mem-hera-session");
+    if (cached) {
+      try {
+        setSession(JSON.parse(cached) as ChatStartResponse);
+        return;
+      } catch {
+        sessionStorage.removeItem("mem-hera-session");
+      }
+    }
+    let cancelled = false;
+    void startHeraSession()
+      .then((result) => {
+        if (cancelled) return;
+        setSession(result);
+        sessionStorage.setItem("mem-hera-session", JSON.stringify(result));
+      })
+      .catch(() => {
+        if (!cancelled) setSession({ ok: false, tx: "AWU-SEDE-NORTE-50", error: "No se pudo iniciar HERA" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [visible, items.length]);
+  }, [visible, items.length, session]);
 
   useEffect(() => {
     if (!visible) return;
@@ -573,7 +605,7 @@ export function SalesforceChat() {
           </header>
 
           <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto bg-white">
-            <Transcript items={items} />
+            <Transcript items={items} session={session} />
           </div>
 
           <form onSubmit={send} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">

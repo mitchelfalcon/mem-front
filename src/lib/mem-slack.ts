@@ -1,10 +1,38 @@
 export const MEM_AWU_TX = "AWU-SEDE-NORTE-50";
 export const MEM_HOSPITAL_ID = "001xx000003DGw2AAG";
 
-export type SlackAlertResponse = {
+export type KnowledgePayload = {
+  source: string;
+  searchTerm: string;
+  protocoloSanitarioRag: string;
+  articles: { id: string; title: string; filename: string }[];
+  camasUciDisponibles: number;
+  porcentajeMetricaTanh: number;
+  auqScore: number;
+  statusEjecucion: string;
+};
+
+export type TracePayload = {
+  source: string;
+  hospitalId: string;
+  actor: string;
+  note: string;
+  auditId: string;
+  auq: number;
+  brake: boolean;
+  dpHash: string;
+  privacy: string;
+  event: string;
+};
+
+export type ChatStartResponse = {
   ok: boolean;
   tx: string;
   hospitalId?: string;
+  channel?: string;
+  classes?: { name: string; filename: string; bytes: number }[];
+  knowledge?: KnowledgePayload;
+  trace?: TracePayload;
   approveUrl?: string;
   rejectUrl?: string;
   slack?: {
@@ -14,6 +42,12 @@ export type SlackAlertResponse = {
     ts?: string;
     error?: string;
     reason?: string;
+    uploads?: { filename: string; ok: boolean; error?: string; reason?: string }[];
+  };
+  salesforce?: {
+    ok?: boolean;
+    reason?: string;
+    classes?: { name: string; ok: boolean; op?: string; error?: string }[];
   };
   error?: string;
 };
@@ -28,13 +62,13 @@ export type AuthorizeResponse = {
   error?: string;
 };
 
-export async function sendEpidemiologicalAlert(tx = MEM_AWU_TX): Promise<SlackAlertResponse> {
-  const response = await fetch("/api/mem/slack/alert", {
+export async function startHeraSession(tx = MEM_AWU_TX): Promise<ChatStartResponse> {
+  const response = await fetch("/api/mem/chat/start", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ tx, hospitalId: MEM_HOSPITAL_ID, beds: 50 }),
   });
-  return (await response.json()) as SlackAlertResponse;
+  return (await response.json()) as ChatStartResponse;
 }
 
 export async function authorizeAwu(

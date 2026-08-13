@@ -38,12 +38,16 @@ export type ChatSlack = {
   time: string;
 };
 
+export type ChatKnowledge = {
+  kind: "knowledge";
+};
+
 export type ChatAudit = {
   kind: "audit";
   time: string;
 };
 
-export type ChatItem = ChatBookend | ChatText | ChatFile | ChatFields | ChatSlack | ChatAudit;
+export type ChatItem = ChatBookend | ChatText | ChatFile | ChatFields | ChatSlack | ChatKnowledge | ChatAudit;
 
 export const KNOWLEDGE_DOWNLOADS: Record<
   KnowledgeDownloadId,
@@ -119,13 +123,7 @@ export const HERA_TRANSCRIPT: ChatItem[] = [
     subtitle: "Protocolos Nacionales de Atención Médica (PRONAM)",
     downloadId: "pronam",
   },
-  {
-    kind: "fields",
-    items: [
-      { object: "KnowledgeArticleVersion", detail: "2 artículos Knowledge" },
-      { object: "Alerta_Epidemiologica__c", detail: "PENDIENTE_ESCALAMIENTO" },
-    ],
-  },
+  { kind: "knowledge" },
   {
     kind: "bookend",
     icon: "chat",
