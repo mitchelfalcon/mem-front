@@ -4,6 +4,7 @@ import { Home } from "./pages/Home";
 import { Mapas } from "./pages/Mapas";
 import { Estadisticas } from "./pages/Estadisticas";
 import { ConsoleTabs, ConsoleIcons } from "./components/mem/ConsoleNav";
+import { SalesforceChat } from "./components/mem/SalesforceChat";
 import memLogo from "./assets/mem-logo.png";
 
 type PageId = "presentation" | "home" | "mapas" | "estadisticas";
@@ -79,23 +80,26 @@ export default function App() {
       </div>
 
       {/* Main menu — pinned to the bottom of the viewport on every page */}
-      <footer className="z-50 shrink-0 border-t border-white/60 bg-white/80 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
-        <nav className="flex w-full items-center justify-around gap-0 overflow-x-auto px-1 py-1.5 sm:justify-end sm:gap-1 sm:px-6 sm:py-2">
-          {NAV.map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => go(id)}
-              aria-current={page === id ? "page" : undefined}
-              className={`relative min-w-0 flex-1 whitespace-nowrap rounded-md px-1.5 py-1 text-center text-[10px] uppercase tracking-wide transition-colors sm:flex-none sm:px-3 sm:text-[13px] sm:normal-case sm:tracking-normal ${
-                page === id ? "font-semibold text-mem-navy" : "font-medium text-slate-600 hover:text-mem-navy"
-              }`}
-            >
-              {label}
-              {page === id && (
-                <span className="absolute -bottom-[4px] left-2 right-2 h-[3px] rounded-full bg-mem-blue sm:-bottom-[6px] sm:left-3 sm:right-3" />
-              )}
-            </button>
-          ))}
+      <footer className="relative z-50 shrink-0 border-t border-white/60 bg-white/80 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+        <nav className="relative flex w-full items-center gap-0 overflow-x-auto px-1 py-1.5 sm:gap-1 sm:px-6 sm:py-2">
+          <SalesforceChat />
+          <div className="flex min-w-0 flex-1 items-center justify-around sm:justify-end sm:gap-1">
+            {NAV.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => go(id)}
+                aria-current={page === id ? "page" : undefined}
+                className={`relative min-w-0 flex-1 whitespace-nowrap rounded-md px-1.5 py-1 text-center text-[10px] uppercase tracking-wide transition-colors sm:flex-none sm:px-3 sm:text-[13px] sm:normal-case sm:tracking-normal ${
+                  page === id ? "font-semibold text-mem-navy" : "font-medium text-slate-600 hover:text-mem-navy"
+                }`}
+              >
+                {label}
+                {page === id && (
+                  <span className="absolute -bottom-[4px] left-2 right-2 h-[3px] rounded-full bg-mem-blue sm:-bottom-[6px] sm:left-3 sm:right-3" />
+                )}
+              </button>
+            ))}
+          </div>
         </nav>
       </footer>
     </div>
