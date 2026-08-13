@@ -46,6 +46,14 @@ heroku config:set NPM_CONFIG_LEGACY_PEER_DEPS=true
 
 Copy `.env.example` and provide values as needed. Do **not** commit real secrets — set them with `heroku config:set` (e.g. Salesforce / Data Cloud credentials for a Heroku Connected App). Redacted example keys live in `.env.example`.
 
+HITL Slack → Salesforce (`MEM_SlackApprovalService`):
+
+- `SF_INSTANCE_URL` + `SF_ACCESS_TOKEN` — GET `/services/apexrest/mem/v1/authorize/?tx=&action=APPROVE|REJECT`
+- `SLACK_BOT_TOKEN` + `SLACK_CHANNEL` (default `#urgencias-epidemiologia`) — the chat posts the epidemiological alert; Slack buttons hit the same authorize URL
+- Deploy `salesforce/classes/MEM_SlackApprovalService.cls` to the org
+
+Slack MCP for Cursor: `.cursor/mcp.json` points at `https://mcp.slack.com/mcp`. Authenticate Slack (and Salesforce) from Cursor Settings → MCP.
+
 ## Notes
 
 - `src/assets/mem-console-bg.png` (behind-video background) and `src/assets/avatar.png` (mascot) are generated stand-ins; replace them with the exact design assets when available.

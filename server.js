@@ -3,11 +3,14 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { memApiMiddleware } from "./server/mem-api.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, "dist");
 
 const app = express();
+
+app.use(memApiMiddleware);
 
 // Serve static assets produced by `vite build`.
 app.use(express.static(distDir));

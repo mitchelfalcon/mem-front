@@ -15,6 +15,7 @@ import {
   type KnowledgeDownloadId,
 } from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
+import { authorizeAwu, sendEpidemiologicalAlert } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -220,45 +221,101 @@ function FieldsCard({ item }: { item: Extract<ChatItem, { kind: "fields" }> }) {
 }
 
 function SlackAction({
-  downloadId,
+  action,
   children,
   variant,
+  disabled,
+  onDecided,
 }: {
-  downloadId: KnowledgeDownloadId;
+  action: "APPROVE" | "REJECT";
   children: string;
   variant: "primary" | "secondary";
+  disabled?: boolean;
+  onDecided: (action: "APPROVE" | "REJECT", body: string, ok: boolean) => void;
 }) {
-  const { status, start } = useKnowledgeDownload();
-  const busy = status === "downloading";
-  const done = status === "done";
-  const asset = KNOWLEDGE_DOWNLOADS[downloadId];
+  const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
+
+  const onClick = async () => {
+    if (status === "working" || disabled) return;
+    setStatus("working");
+    try {
+      const result = await authorizeAwu(action);
+      setStatus(result.ok ? "done" : "error");
+      onDecided(action, result.body || result.error || "", result.ok);
+    } catch {
+      setStatus("error");
+      onDecided(action, "No se pudo contactar MEM_SlackApprovalService", false);
+    }
+  };
 
   return (
     <button
       type="button"
-      onClick={() => void start(downloadId)}
-      disabled={busy}
-      aria-label={`Descargar ${asset.filename}`}
+      onClick={() => void onClick()}
+      disabled={disabled || status === "working" || status === "done"}
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition disabled:opacity-70 ${
         variant === "primary"
           ? "bg-[#03234d] text-white hover:bg-[#053a7a]"
           : "border border-[#c9c9c9] font-medium text-[#747474] hover:border-[#03234d] hover:text-[#03234d]"
       }`}
     >
-      {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : done ? <Check className="h-3 w-3" /> : null}
-      {busy ? "Descargando…" : done ? "Descargado" : children}
+      {status === "working" ? <Loader2 className="h-3 w-3 animate-spin" /> : status === "done" ? <Check className="h-3 w-3" /> : null}
+      {status === "working" ? "Enviando a Salesforce…" : status === "done" ? "Registrado" : children}
     </button>
   );
 }
 
 function SlackCard({ time }: { time: string }) {
+  const [sendState, setSendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [sendDetail, setSendDetail] = useState("Bot Slack · MEM Agent · #urgencias-epidemiologia");
+  const [decision, setDecision] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
+
+  useEffect(() => {
+    const key = "mem-slack-alert-sent";
+    if (sessionStorage.getItem(key) === "1") {
+      setSendState("sent");
+      setSendDetail("Alerta ya enviada a #urgencias-epidemiologia");
+      return;
+    }
+    let cancelled = false;
+    setSendState("sending");
+    void sendEpidemiologicalAlert()
+      .then((result) => {
+        if (cancelled) return;
+        const posted = Boolean(result.slack?.posted || result.ok);
+        if (posted || result.slack?.reason) {
+          sessionStorage.setItem(key, "1");
+        }
+        if (result.slack?.posted) {
+          setSendState("sent");
+          setSendDetail(`Alerta enviada a ${result.slack.channel || "#urgencias-epidemiologia"}`);
+        } else if (result.slack?.reason) {
+          setSendState("sent");
+          setSendDetail(`${result.slack.reason}. Botones llaman /mem/v1/authorize`);
+        } else {
+          setSendState("error");
+          setSendDetail(result.slack?.error || result.error || "No se pudo enviar a Slack");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSendState("error");
+          setSendDetail("Error de red al enviar la alerta");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <li className="flex justify-end">
       <div className="w-full max-w-[min(100%,20.5rem)]">
         <div className="overflow-hidden rounded-[12px] rounded-br-none border border-[#8c4b02] bg-white">
           <div className="flex items-start gap-2 border-b border-[#f3e5d7] bg-[#fff8f0] px-2.5 py-2">
             <SldsIcon src={warningIcon} size={16} />
-            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">Bot Slack · MEM Agent · #urgencias-epidemiologia</p>
+            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">{sendDetail}</p>
           </div>
           <div className="space-y-2 px-2.5 py-2">
             <p className="text-[13px] font-semibold leading-[18px] text-[#2e2e2e]">🚨 ALERTA EPIDEMIOLÓGICA – SEDE NORTE</p>
@@ -267,14 +324,36 @@ function SlackCard({ time }: { time: string }) {
               <br />
               Confianza_AUQ: 0.985 / Umbral: 0.999 · Freno tanh: ACTIVO · Camas libres: 18/100
             </p>
+            {sendState === "sending" && (
+              <p className="flex items-center gap-1.5 text-[11px] text-[#747474]">
+                <Loader2 className="h-3 w-3 animate-spin" /> Publicando en Slack…
+              </p>
+            )}
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <SlackAction downloadId="vigilancia" variant="primary">
+              <SlackAction
+                action="APPROVE"
+                variant="primary"
+                disabled={locked}
+                onDecided={(_action, body) => {
+                  setLocked(true);
+                  setDecision(body);
+                }}
+              >
                 Sí, Apartar 50 Camas UCI
               </SlackAction>
-              <SlackAction downloadId="pronam" variant="secondary">
+              <SlackAction
+                action="REJECT"
+                variant="secondary"
+                disabled={locked}
+                onDecided={(_action, body) => {
+                  setLocked(true);
+                  setDecision(body);
+                }}
+              >
                 Rechazar
               </SlackAction>
             </div>
+            {decision && <p className="break-words text-[12px] leading-4 text-[#03234d]">{decision}</p>}
           </div>
         </div>
         <p className="pt-0.5 text-right text-[10px] leading-[14px] text-[#747474]">Bot MEM Agent • {time}</p>
