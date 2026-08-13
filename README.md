@@ -1,6 +1,6 @@
 # MEM Healthcare
 
-Frontend (Vite + React + TypeScript + Tailwind) for the **MEM Healthcare** console — an immersive Salesforce-style dashboard with Presentation, Home, Mapas and Estadísticas pages.
+Frontend (Vite + React + TypeScript + Tailwind) for the **MEM Healthcare** console — an immersive Salesforce-style dashboard with Presentation, Home, Mapas, Estadísticas and Slack pages.
 
 ## Requirements
 
@@ -45,6 +45,31 @@ heroku config:set NPM_CONFIG_LEGACY_PEER_DEPS=true
 ### Environment variables
 
 Copy `.env.example` and provide values as needed. Do **not** commit real secrets — set them with `heroku config:set` (e.g. Salesforce / Data Cloud credentials for a Heroku Connected App). Redacted example keys live in `.env.example`.
+
+HITL Slack → Salesforce (`MEM_SlackApprovalService`):
+
+- `SF_INSTANCE_URL` + `SF_ACCESS_TOKEN` — GET `/services/apexrest/mem/v1/authorize/?tx=&action=APPROVE|REJECT`
+- `SLACK_BOT_TOKEN` + `SLACK_CHANNEL` (default `D0BNHUA8R7D`, workspace `T06E6HP8A2W`) — the chat posts the epidemiological alert and the same two HITL actions into that DM canvas; Slack buttons hit the same authorize URL and refresh the same canvas
+- Deploy `salesforce/classes/MEM_SlackApprovalService.cls` to the org
+
+Slack MCP for Cursor: `.cursor/mcp.json` points at `https://mcp.slack.com/mcp`. Authenticate Slack (and Salesforce) from Cursor Settings → MCP.
+
+### Salesforce Agentforce → Heroku MCP (`memhealthcare`)
+
+Salesforce API names reject hyphens. Register the server as **`memhealthcare`** (not `mem-healthcare`).
+
+| Field | Value |
+| --- | --- |
+| MCP Server Name | `memhealthcare` |
+| Description | Heroku MCP Server |
+| Server URL | `https://memhealthcare-app-01f3bfd4e4a3.herokuapp.com/` |
+| MCP endpoint | `https://memhealthcare-app-01f3bfd4e4a3.herokuapp.com/mcp` |
+| Authentication Method | OAuth 2.0 |
+| Identity Provider URL | `https://id.heroku.com` |
+| Scope | `global` |
+| Client ID / Client Secret | Heroku OAuth app — set as `HEROKU_OAUTH_CLIENT_ID` / `HEROKU_OAUTH_CLIENT_SECRET`, never commit them |
+
+`HEROKU_API_KEY` is for the Heroku CLI / Platform API only. Set it locally or with `heroku config:set`; do not put it in git.
 
 ## Notes
 

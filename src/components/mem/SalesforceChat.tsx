@@ -1,5 +1,5 @@
 import { Fragment, type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { Minus, Send, X } from "lucide-react";
+import { Check, Loader2, Minus, Send, X } from "lucide-react";
 import chatIcon from "../../assets/slds-chat/chat.svg";
 import endChatIcon from "../../assets/slds-chat/end-chat.svg";
 import doctypeImageIcon from "../../assets/slds-chat/doctype-image.svg";
@@ -7,8 +7,15 @@ import downloadIcon from "../../assets/slds-chat/download.svg";
 import warningIcon from "../../assets/slds-chat/warning.svg";
 import drArmando from "../../assets/dr-armando.png";
 import avatar from "../../assets/avatar.png";
-import { HERA_TRANSCRIPT, type ChatItem, type ChatText } from "../../data/hera-chat";
+import {
+  HERA_EMPTY_TRANSCRIPT,
+  KNOWLEDGE_DOWNLOADS,
+  type ChatItem,
+  type ChatText,
+  type KnowledgeDownloadId,
+} from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
+import { authorizeAwu, fetchHeraThread, replyHera, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -21,6 +28,40 @@ function SldsIcon({ src, size = 16, alt = "" }: { src: string; size?: number; al
       <img src={src} alt={alt} width={size} height={size} className="h-full w-full object-contain" />
     </span>
   );
+}
+
+async function downloadKnowledgeCsv(id: KnowledgeDownloadId) {
+  const asset = KNOWLEDGE_DOWNLOADS[id];
+  const response = await fetch(asset.href);
+  if (!response.ok) throw new Error(`No se pudo descargar ${asset.filename}`);
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = asset.filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function useKnowledgeDownload() {
+  const [status, setStatus] = useState<"idle" | "downloading" | "done">("idle");
+
+  const start = async (id: KnowledgeDownloadId) => {
+    if (status === "downloading") return;
+    setStatus("downloading");
+    try {
+      await new Promise((resolve) => window.setTimeout(resolve, 480));
+      await downloadKnowledgeCsv(id);
+      setStatus("done");
+      window.setTimeout(() => setStatus("idle"), 1800);
+    } catch {
+      setStatus("idle");
+    }
+  };
+
+  return { status, start };
 }
 
 function initialsBubble(name: string, initials?: string) {
@@ -120,24 +161,40 @@ function OutboundMessage({
 
 function FileMessage({ item }: { item: Extract<ChatItem, { kind: "file" }> }) {
   const outbound = item.direction === "outbound";
+  const { status, start } = useKnowledgeDownload();
+  const busy = status === "downloading";
+  const done = status === "done";
+
   return (
     <li className={`flex ${outbound ? "justify-end" : "items-end gap-2"}`}>
       {!outbound && <span className="h-8 w-8 shrink-0" />}
-      <div className={`min-w-0 ${outbound ? "max-w-[min(100%,20.5rem)]" : "max-w-[min(100%,20.5rem)] flex-1"}`}>
-        <div
-          className={`overflow-hidden rounded-[12px] border border-[#c9c9c9] bg-white ${
+      <div className="min-w-0 max-w-[min(100%,20.5rem)]">
+        <button
+          type="button"
+          onClick={() => void start(item.downloadId)}
+          disabled={busy}
+          aria-label={`Descargar ${item.filename}`}
+          className={`flex w-full items-center gap-2 rounded-[12px] border border-[#c9c9c9] bg-white px-2 py-2 text-left transition hover:border-[#0250d9] hover:bg-[#f8fafc] disabled:opacity-70 ${
             outbound ? "rounded-br-none" : "rounded-bl-none"
           }`}
         >
-          <div className="flex items-center gap-2 px-2 py-2">
-            <SldsIcon src={doctypeImageIcon} size={28} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">{item.filename}</p>
-              <p className="text-[12px] leading-4 text-[#2e2e2e]">{item.subtitle}</p>
-            </div>
-            <SldsIcon src={downloadIcon} size={16} />
+          <SldsIcon src={doctypeImageIcon} size={28} />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">{item.filename}</p>
+            <p className="text-[12px] leading-4 text-[#2e2e2e]">
+              {busy ? "Descargando…" : done ? "Descargado" : item.subtitle}
+            </p>
           </div>
-        </div>
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f3f3f3] text-[#0250d9]">
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : done ? (
+              <Check className="h-4 w-4 text-[#2e844a]" />
+            ) : (
+              <SldsIcon src={downloadIcon} size={16} />
+            )}
+          </span>
+        </button>
         <p className={`pt-0.5 text-[10px] leading-[14px] text-[#747474] ${outbound ? "text-right" : ""}`}>
           {item.name} • {item.time}
         </p>
@@ -163,47 +220,184 @@ function FieldsCard({ item }: { item: Extract<ChatItem, { kind: "fields" }> }) {
   );
 }
 
-function SlackCard({ time }: { time: string }) {
+function SlackAction({
+  action,
+  children,
+  variant,
+  disabled,
+  onDecided,
+}: {
+  action: "APPROVE" | "REJECT";
+  children: string;
+  variant: "primary" | "secondary";
+  disabled?: boolean;
+  onDecided: (action: "APPROVE" | "REJECT", body: string, ok: boolean, clientUrl?: string) => void;
+}) {
+  const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
+
+  const onClick = async () => {
+    if (status === "working" || disabled) return;
+    setStatus("working");
+    try {
+      const result = await authorizeAwu(action);
+      setStatus(result.ok ? "done" : "error");
+      onDecided(action, result.body || result.error || "", result.ok, result.clientUrl);
+    } catch {
+      setStatus("error");
+      onDecided(action, "No se pudo contactar MEM_SlackApprovalService", false);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => void onClick()}
+      disabled={disabled || status === "working" || status === "done"}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold transition disabled:opacity-70 ${
+        variant === "primary"
+          ? "bg-[#03234d] text-white hover:bg-[#053a7a]"
+          : "border border-[#c9c9c9] font-medium text-[#747474] hover:border-[#03234d] hover:text-[#03234d]"
+      }`}
+    >
+      {status === "working" ? <Loader2 className="h-3 w-3 animate-spin" /> : status === "done" ? <Check className="h-3 w-3" /> : null}
+      {status === "working" ? "Enviando a Salesforce…" : status === "done" ? "Registrado" : children}
+    </button>
+  );
+}
+
+function SlackCard({ time, session }: { time: string; session: ChatStartResponse | null }) {
+  const [decision, setDecision] = useState<string | null>(null);
+  const [locked, setLocked] = useState(false);
+  const knowledge = session?.knowledge;
+  const slack = session?.slack;
+  const channel = session?.channel || slack?.channel || "D0BNHUA8R7D";
+  const clientUrl =
+    session?.clientUrl || slack?.clientUrl || slack?.canvas?.clientUrl || `https://app.slack.com/client/T06E6HP8A2W/${channel}`;
+  const canvasUrl = slack?.canvasUrl || slack?.canvas?.canvasUrl;
+
+  let header = `MEM Healthcare — Gran Maestro AUQ · ${channel}`;
+  if (!session) header = "Publicando Apex local y alerta AUQ en Slack…";
+  else if (slack?.posted) header = `Alerta y canvas actualizados en ${channel}`;
+  else if (slack?.reason) header = `${slack.reason} · mensaje RAG listo`;
+  else if (slack?.error) header = slack.error;
+
   return (
     <li className="flex justify-end">
       <div className="w-full max-w-[min(100%,20.5rem)]">
         <div className="overflow-hidden rounded-[12px] rounded-br-none border border-[#8c4b02] bg-white">
           <div className="flex items-start gap-2 border-b border-[#f3e5d7] bg-[#fff8f0] px-2.5 py-2">
             <SldsIcon src={warningIcon} size={16} />
-            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">Bot Slack · MEM Agent · #urgencias-epidemiologia</p>
+            <p className="text-[12px] font-semibold leading-4 text-[#8c4b02]">{header}</p>
           </div>
           <div className="space-y-2 px-2.5 py-2">
-            <p className="text-[13px] font-semibold leading-[18px] text-[#2e2e2e]">🚨 ALERTA EPIDEMIOLÓGICA – SEDE NORTE</p>
+            <p className="text-[13px] font-semibold leading-[18px] text-[#2e2e2e]">
+              🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO
+            </p>
             <p className="text-[13px] leading-[18px] text-[#2e2e2e]">
-              Notas: 1,247 · Riesgo: Endemia Respiratoria (p90 = 87.05%)
+              Sede Norte · Freno tanh activo por incertidumbre epistémica.
               <br />
-              Confianza_AUQ: 0.985 / Umbral: 0.999 · Freno tanh: ACTIVO · Camas libres: 18/100
+              Camas UCI: {knowledge?.camasUciDisponibles ?? 18} libres · tanh {knowledge?.porcentajeMetricaTanh ?? 88.05}% · AUQ{" "}
+              {((knowledge?.auqScore ?? 0.985) * 100).toFixed(2)}% (exigido ≥ 99.9%)
+            </p>
+            <p className="text-[12px] leading-4 text-[#2e2e2e]">
+              RAG: {knowledge?.protocoloSanitarioRag ?? "Consultando Knowledge…"}
+            </p>
+            {!session && (
+              <p className="flex items-center gap-1.5 text-[11px] text-[#747474]">
+                <Loader2 className="h-3 w-3 animate-spin" /> Enviando Apex local a Slack y Salesforce…
+              </p>
+            )}
+            {session?.classes && (
+              <p className="text-[11px] leading-4 text-[#747474]">
+                Apex local: {session.classes.map((item) => item.filename).join(", ")}
+              </p>
+            )}
+            <p className="text-[11px] leading-4 text-[#747474]">
+              Canal HITL:{" "}
+              <a href={clientUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0176d3] underline">
+                {channel}
+              </a>
+              {canvasUrl ? (
+                <>
+                  {" · "}
+                  <a href={canvasUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0176d3] underline">
+                    mismo canvas
+                  </a>
+                </>
+              ) : (
+                " · mismo canvas y mismas acciones"
+              )}
             </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="inline-flex rounded-full bg-[#03234d] px-2.5 py-1 text-[11px] font-semibold text-white">
-                Sí, Apartar 50 Camas UCI
-              </span>
-              <span className="inline-flex rounded-full border border-[#c9c9c9] px-2.5 py-1 text-[11px] font-medium text-[#747474]">
-                Rechazar
-              </span>
+              <SlackAction
+                action="APPROVE"
+                variant="primary"
+                disabled={locked}
+                onDecided={(_action, body, _ok, decisionUrl) => {
+                  setLocked(true);
+                  setDecision(
+                    `${body}${decisionUrl ? ` · canvas actualizado en ${channel}` : " · mismas acciones en el canvas HITL"}`,
+                  );
+                }}
+              >
+                AUTORIZAR BLOQUEO UCI (AWU)
+              </SlackAction>
+              <SlackAction
+                action="REJECT"
+                variant="secondary"
+                disabled={locked}
+                onDecided={(_action, body, _ok, decisionUrl) => {
+                  setLocked(true);
+                  setDecision(
+                    `${body}${decisionUrl ? ` · canvas actualizado en ${channel}` : " · mismas acciones en el canvas HITL"}`,
+                  );
+                }}
+              >
+                RECHAZAR Y MANTENER ESTACIONAL
+              </SlackAction>
             </div>
+            {decision && <p className="break-words text-[12px] leading-4 text-[#03234d]">{decision}</p>}
           </div>
         </div>
-        <p className="pt-0.5 text-right text-[10px] leading-[14px] text-[#747474]">Bot MEM Agent • {time}</p>
+        <p className="pt-0.5 text-right text-[10px] leading-[14px] text-[#747474]">Gran Maestro AUQ • {time}</p>
       </div>
     </li>
   );
 }
 
-function AuditCard({ time }: { time: string }) {
+function KnowledgeCard({ session }: { session: ChatStartResponse | null }) {
+  const knowledge = session?.knowledge;
+  return (
+    <li className="flex justify-end">
+      <div className="w-full max-w-[min(100%,20.5rem)] overflow-hidden rounded-[12px] rounded-br-none border border-[#c9c9c9] bg-white">
+        <div className="border-b border-[#e5e5e5] bg-[#f3f3f3] px-2.5 py-2">
+          <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">Knowledge · RAG</p>
+          <p className="text-[10px] leading-[14px] text-[#747474]">{knowledge?.source ?? "MEM_RAG_KnowledgeService"}</p>
+        </div>
+        <div className="space-y-1.5 px-2.5 py-2 text-[12px] leading-4 text-[#2e2e2e]">
+          <p>{knowledge?.protocoloSanitarioRag ?? "Cargando protocolo sanitario…"}</p>
+          <p className="text-[#747474]">Búsqueda: {knowledge?.searchTerm ?? "—"}</p>
+          <p>Estado: {knowledge?.statusEjecucion ?? "ESCALADO_HUMANO_SLACK"}</p>
+          <p>Camas UCI disponibles: {knowledge?.camasUciDisponibles ?? "—"}</p>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function AuditCard({ time, session }: { time: string; session: ChatStartResponse | null }) {
+  const trace = session?.trace;
   const rows = [
-    ["Audit Record ID", "AUD-883"],
-    ["Estado__c", "COMPLETED_AWU_COMMITTED"],
-    ["Cama_UCI__c", "50 → Bloqueada_Epidemia"],
-    ["Confianza_AUQ__c", "0.985"],
-    ["Freno_Tanh_Activado__c", "true"],
-    ["Mensaje_Traza__c", "EMERGENCY_BED_RESERVATION_COMMIT"],
-    ["Firma_Criptografica_DP__c", "[HA…]"],
+    ["Trace", trace?.source ?? "MEM_Audit_TraceEngine.logAuditTrace"],
+    ["Audit Record ID", trace?.auditId ?? "AUD-883"],
+    ["Actor", trace?.actor ?? "El_Gran_Maestro"],
+    ["Hospital", trace?.hospitalId ?? "001xx000003DGw2AAG"],
+    ["AUQ", String(trace?.auq ?? 0.985)],
+    ["Freno tanh", String(trace?.brake ?? true)],
+    ["Evento", trace?.event ?? "MEM_Clinical_Audit__e"],
+    ["Firma DP", trace?.dpHash ?? "[HASH_DP_883]"],
+    ["Privacidad", trace?.privacy ?? "ACTIVE_LAPLACIAN_DP_EPSILON_0.1"],
+    ["Nota", trace?.note ?? "Actualizado por agente de IA."],
   ];
   return (
     <li className="flex justify-end">
@@ -212,8 +406,8 @@ function AuditCard({ time }: { time: string }) {
           <div className="flex items-center gap-2 border-b border-[#e5e5e5] bg-[#f3f3f3] px-2.5 py-2">
             <SldsIcon src={doctypeImageIcon} size={22} />
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">MEM_Clinical_Audit__c</p>
-              <p className="text-[10px] leading-[14px] text-[#747474]">MEM Clinical Audits · AUD-883</p>
+              <p className="text-[13px] font-semibold leading-[18px] text-[#03234d]">Trazabilidad</p>
+              <p className="text-[10px] leading-[14px] text-[#747474]">{trace?.source ?? "MEM_Audit_TraceEngine"} · {trace?.auditId ?? "AUD-883"}</p>
             </div>
           </div>
           <dl className="divide-y divide-[#e5e5e5]">
@@ -241,7 +435,7 @@ function isSameSpeaker(a: ChatItem | undefined, b: ChatItem | undefined) {
   );
 }
 
-function Transcript({ items }: { items: ChatItem[] }) {
+function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartResponse | null }) {
   return (
     <ul className="flex flex-col gap-3 px-3 py-3">
       {items.map((item, index) => {
@@ -252,8 +446,9 @@ function Transcript({ items }: { items: ChatItem[] }) {
             {item.kind === "bookend" && <Bookend item={item} />}
             {item.kind === "file" && <FileMessage item={item} />}
             {item.kind === "fields" && <FieldsCard item={item} />}
-            {item.kind === "slack" && <SlackCard time={item.time} />}
-            {item.kind === "audit" && <AuditCard time={item.time} />}
+            {item.kind === "knowledge" && <KnowledgeCard session={session} />}
+            {item.kind === "slack" && <SlackCard time={item.time} session={session} />}
+            {item.kind === "audit" && <AuditCard time={item.time} session={session} />}
             {item.kind === "inbound" && (
               <InboundMessage item={item} consecutive={grouped} hideMeta={hideMeta} />
             )}
@@ -275,7 +470,8 @@ export function SalesforceChat() {
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);
   const [draft, setDraft] = useState("");
-  const [items, setItems] = useState<ChatItem[]>(HERA_TRANSCRIPT);
+  const [items, setItems] = useState<ChatItem[]>(HERA_EMPTY_TRANSCRIPT);
+  const [session, setSession] = useState<ChatStartResponse | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleId = useId();
@@ -283,10 +479,27 @@ export function SalesforceChat() {
   const visible = open && !minimized;
 
   useEffect(() => {
+    sessionStorage.removeItem("mem-hera-session");
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    void fetchHeraThread().then((data) => {
+      if (cancelled) return;
+      if (Array.isArray(data.items) && data.items.length) setItems(data.items as ChatItem[]);
+      if (data.session) setSession(data.session);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  useEffect(() => {
     if (!visible) return;
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [visible, items.length]);
+  }, [visible, items.length, session]);
 
   useEffect(() => {
     if (!visible) return;
@@ -320,10 +533,11 @@ export function SalesforceChat() {
     mutePresentationAudio();
   };
 
-  const send = (e: FormEvent) => {
+  const send = async (e: FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
+    setDraft("");
     setItems((prev) => [
       ...prev,
       {
@@ -334,7 +548,21 @@ export function SalesforceChat() {
         text,
       },
     ]);
-    setDraft("");
+    try {
+      const result = await replyHera(text);
+      if (Array.isArray(result.items)) setItems(result.items as ChatItem[]);
+      if (result.session) setSession(result.session);
+    } catch {
+      setItems((prev) => [
+        ...prev,
+        {
+          kind: "outbound",
+          name: "Agente HERA",
+          time: formatNow(),
+          text: "No pude contactar el orquestador HERA. Reintenta el mensaje.",
+        },
+      ]);
+    }
   };
 
   const onComposerKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -406,10 +634,10 @@ export function SalesforceChat() {
           </header>
 
           <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto bg-white">
-            <Transcript items={items} />
+            <Transcript items={items} session={session} />
           </div>
 
-          <form onSubmit={send} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
+          <form onSubmit={(e) => void send(e)} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
             <div className="flex items-end gap-1.5 rounded-md border border-[#c9c9c9] bg-white px-2 py-1.5 focus-within:border-[#0250d9]">
               <textarea
                 ref={inputRef}
