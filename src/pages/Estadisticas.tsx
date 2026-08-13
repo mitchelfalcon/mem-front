@@ -92,7 +92,7 @@ export function Estadisticas() {
         {/* Light legibility scrim — keeps the video visible behind the frosted cards */}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/45 via-white/15 to-transparent" />
 
-        <div className="relative h-full overflow-y-auto p-4 pl-[136px] sm:p-6 sm:pl-[140px]">
+        <div className="relative h-full overflow-y-auto overflow-x-hidden pt-3 pr-3 pb-3 pl-sidebar sm:pt-6 sm:pr-6 sm:pb-6">
           {/* Header */}
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -108,7 +108,7 @@ export function Estadisticas() {
           </div>
 
           {/* KPIs */}
-          <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
             {KPIS.map((kpi, i) => {
               const tone = TONE[kpi.tone];
               const Icon = tone.icon;
@@ -134,8 +134,8 @@ export function Estadisticas() {
                       {kpi.delta}
                     </span>
                   </div>
-                  <p className={`text-2xl font-extrabold ${tone.text}`}>{kpi.value}</p>
-                  <p className="text-[11px] font-medium text-slate-500">{kpi.label}</p>
+                  <p className={`text-xl font-extrabold leading-tight sm:text-2xl ${tone.text}`}>{kpi.value}</p>
+                  <p className="text-[10px] font-medium leading-tight text-slate-500 sm:text-[11px]">{kpi.label}</p>
                 </motion.div>
               );
             })}
@@ -146,7 +146,7 @@ export function Estadisticas() {
             <Panel
               title="Canal endémico"
               subtitle="Casos observados vs. zonas de éxito / seguridad / alerta"
-              className="lg:col-span-2 lg:row-span-2 min-h-[280px]"
+              className="lg:col-span-2 lg:row-span-2 min-h-[220px] sm:min-h-[280px]"
             >
               {chartsReady ? (
                 <ResponsiveContainer width="100%" height="100%">
@@ -173,7 +173,7 @@ export function Estadisticas() {
               )}
             </Panel>
 
-            <Panel title="Tendencias" subtitle="Ingresos vs. resueltos" className="min-h-[150px]">
+            <Panel title="Tendencias" subtitle="Ingresos vs. resueltos" className="min-h-[180px] sm:min-h-[150px]">
               {chartsReady ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={TRENDS} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
@@ -200,7 +200,7 @@ export function Estadisticas() {
               )}
             </Panel>
 
-            <Panel title="Distribución por zona" subtitle="Participación de casos" className="min-h-[150px]">
+            <Panel title="Distribución por zona" subtitle="Participación de casos" className="min-h-[180px] sm:min-h-[150px]">
               {chartsReady ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>

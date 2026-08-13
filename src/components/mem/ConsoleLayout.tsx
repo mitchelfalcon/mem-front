@@ -104,7 +104,8 @@ export function ConsoleLayout({
               initial={{ opacity: 0, scale: 0.95, x: -8 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.95, x: -8 }}
-              className="fixed left-[128px] top-[120px] z-50 w-64 rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+              className="fixed top-[4.75rem] z-50 w-[min(16rem,calc(100vw-5.5rem))] rounded-2xl border border-white/70 bg-white/95 p-3 shadow-2xl backdrop-blur-xl md:top-[120px] md:w-64"
+              style={{ left: "calc(var(--mem-sidebar-w) + 0.5rem)" }}
             >
               <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-mem-gray-2">
@@ -142,7 +143,7 @@ export function ConsoleLayout({
             initial={{ opacity: 0, y: 20, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.96 }}
-            className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full bg-mem-navy px-4 py-2.5 text-sm font-semibold text-white shadow-2xl"
+            className="fixed bottom-20 left-1/2 z-50 flex max-w-[min(90vw,24rem)] -translate-x-1/2 items-center gap-2 rounded-full bg-mem-navy px-4 py-2.5 text-sm font-semibold text-white shadow-2xl sm:bottom-6"
           >
             <CheckCircle2 className="h-4 w-4 text-emerald-400" />
             {toast}

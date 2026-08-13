@@ -54,7 +54,7 @@ export function Presentation() {
         disabled={busy}
         aria-pressed={soundOn}
         aria-label={soundOn ? "Silenciar audio" : "Activar audio"}
-        className="absolute bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-4 py-2.5 text-sm font-semibold text-mem-navy shadow-lg backdrop-blur-md transition hover:bg-white disabled:opacity-70"
+        className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-2 text-xs font-semibold text-mem-navy shadow-lg backdrop-blur-md transition hover:bg-white disabled:opacity-70 sm:bottom-5 sm:right-5 sm:px-4 sm:py-2.5 sm:text-sm"
       >
         {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
         {soundOn ? "Silenciar" : "Activar audio"}

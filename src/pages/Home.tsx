@@ -43,11 +43,11 @@ export function Home() {
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/45 via-white/10 to-transparent" />
 
         {/* Symmetric 50/50 split — no absolute positioning, so no overlaps */}
-        <div className="grid h-full w-full grid-cols-1 gap-6 overflow-y-auto p-6 pl-[128px] lg:grid-cols-2">
+        <div className="grid h-full w-full grid-cols-1 gap-4 overflow-y-auto overflow-x-hidden pt-3 pr-3 pb-3 pl-sidebar sm:gap-6 sm:pt-6 sm:pr-6 sm:pb-6 lg:grid-cols-2">
           {/* ── LEFT column: doctor card -> calendar -> pill -> doctor avatars (stacked) ── */}
-          <div className="flex min-w-0 flex-col items-start gap-4">
+          <div className="flex min-w-0 flex-col items-stretch gap-4 sm:items-start">
               {/* Doctor card */}
-              <motion.div {...enter(0)} className="w-[min(90%,340px)]">
+              <motion.div {...enter(0)} className="w-full max-w-[340px]">
                 <div
                   className="relative h-full overflow-hidden rounded-3xl border border-white/70 p-4 shadow-[0_16px_40px_rgba(0,122,222,0.22)]"
                   style={{ background: CARD_GRADIENT }}
@@ -95,13 +95,13 @@ export function Home() {
               </motion.div>
 
             {/* Calendar — below the doctor card (same size) */}
-            <motion.div {...enter(0.1)} className="w-[min(90%,340px)]">
+            <motion.div {...enter(0.1)} className="w-full max-w-[340px]">
               <CalendarCard />
             </motion.div>
 
             {/* DOCTORES EN TURNO pill — below the cards */}
             <motion.div {...enter(0.15)}>
-              <button className="inline-flex items-center gap-3 rounded-full bg-mem-lime px-6 py-2.5 text-sm font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105">
+              <button className="inline-flex max-w-full items-center gap-2 rounded-full bg-mem-lime px-4 py-2 text-xs font-extrabold uppercase tracking-wide text-mem-ink shadow-md transition-transform hover:scale-105 sm:gap-3 sm:px-6 sm:py-2.5 sm:text-sm">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-mem-ink/80 text-[10px] text-mem-lime">✦</span>
                 Doctores en turno
                 <ChevronRight className="h-5 w-5" />
@@ -109,18 +109,18 @@ export function Home() {
             </motion.div>
 
             {/* Doctor avatars — directly below the pill, within the left column */}
-            <motion.div {...enter(0.2)} className="w-full">
+            <motion.div {...enter(0.2)} className="w-full max-w-md">
               <img src={doctoresTurno} alt="Doctores en turno" className="w-full select-none object-contain" loading="lazy" />
             </motion.div>
           </div>
 
           {/* ── RIGHT column: Reset & Relax (smaller) pinned bottom-right ── */}
-          <div className="flex min-w-0 flex-col items-end justify-end">
+          <div className="flex min-w-0 flex-col items-stretch justify-end sm:items-end">
             <motion.div
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.25 }}
-              className="relative w-[min(100%,880px)]"
+              className="relative w-full max-w-[880px]"
             >
               <img
                 src={resetRelax}
@@ -135,7 +135,7 @@ export function Home() {
                 className="absolute left-[68%] top-[29%] h-[42%] w-[26%]"
               >
                 {mood !== null && (
-                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-white text-[12px] font-bold text-mem-ink shadow">
+                  <span className="flex h-full w-full items-center justify-center rounded-lg bg-white px-1 text-center text-[10px] font-bold text-mem-ink shadow sm:text-[12px]">
                     {MOODS[mood]}
                   </span>
                 )}

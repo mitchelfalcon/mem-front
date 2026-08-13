@@ -38,17 +38,17 @@ export default function App() {
   const isConsole = page !== "presentation";
 
   return (
-    <div className="flex h-full max-h-full flex-col overflow-hidden">
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden">
       {/* Consolidated header: single MEM Healthcare brand + console nav */}
       <header className="z-40 shrink-0 border-b border-white/60 bg-white/80 backdrop-blur-xl">
         {/* Row 1 — brand (once), console action icons */}
-        <div className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+        <div className="flex w-full items-center gap-x-3 px-3 py-2 sm:gap-x-4 sm:px-6 sm:py-2.5">
           <button
             onClick={() => go("presentation")}
             className="flex shrink-0 items-center"
             aria-label="MEM Healthcare — inicio"
           >
-            <img src={memLogo} alt="MEM Healthcare" className="h-12 w-auto" />
+            <img src={memLogo} alt="MEM Healthcare" className="h-8 w-auto sm:h-12" />
           </button>
 
           {isConsole && (
@@ -60,7 +60,7 @@ export default function App() {
 
         {/* Row 2 — Salesforce-style console tabs (console pages only) */}
         {isConsole && (
-          <div className="w-full overflow-x-auto border-t border-slate-100 px-4 py-1.5 sm:px-6">
+          <div className="hidden w-full overflow-x-auto border-t border-slate-100 px-4 py-1.5 sm:px-6 md:block">
             <ConsoleTabs />
           </div>
         )}
@@ -75,20 +75,20 @@ export default function App() {
       </div>
 
       {/* Main menu — pinned to the bottom of the viewport on every page */}
-      <footer className="z-50 shrink-0 border-t border-white/60 bg-white/80 backdrop-blur-xl">
-        <nav className="flex w-full items-center justify-end gap-1 overflow-x-auto px-4 py-2 sm:px-6">
+      <footer className="z-50 shrink-0 border-t border-white/60 bg-white/80 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+        <nav className="flex w-full items-center justify-around gap-0 overflow-x-auto px-1 py-1.5 sm:justify-end sm:gap-1 sm:px-6 sm:py-2">
           {NAV.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => go(id)}
               aria-current={page === id ? "page" : undefined}
-              className={`relative whitespace-nowrap rounded-md px-3 py-1 text-[13px] transition-colors ${
+              className={`relative min-w-0 flex-1 whitespace-nowrap rounded-md px-1.5 py-1 text-center text-[10px] uppercase tracking-wide transition-colors sm:flex-none sm:px-3 sm:text-[13px] sm:normal-case sm:tracking-normal ${
                 page === id ? "font-semibold text-mem-navy" : "font-medium text-slate-600 hover:text-mem-navy"
               }`}
             >
               {label}
               {page === id && (
-                <span className="absolute -bottom-[6px] left-3 right-3 h-[3px] rounded-full bg-mem-blue" />
+                <span className="absolute -bottom-[4px] left-2 right-2 h-[3px] rounded-full bg-mem-blue sm:-bottom-[6px] sm:left-3 sm:right-3" />
               )}
             </button>
           ))}
