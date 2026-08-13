@@ -39,7 +39,7 @@ public with sharing class MEM_OrchestratorController {
         req.setMethod('POST');
         req.setHeader('Content-Type', 'application/json');
 
-        String slackPayload = '{"channel":"#mem-urgencias-epidemiologia",' +
+        String slackPayload = '{"channel":"D0BNHUA8R7D",' +
             '"username":"MEM Healthcare — Gran Maestro AUQ",' +
             '"text":"🚨 ALERTA CRÍTICA: INCERTIDUMBRE AGÉNTICA DETECTADA.\\n' +
             '• Probabilidad Epidémica (p90): ' + quantileScore + '% (Alto Riesgo)\\n' +

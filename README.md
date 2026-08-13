@@ -49,7 +49,7 @@ Copy `.env.example` and provide values as needed. Do **not** commit real secrets
 HITL Slack → Salesforce (`MEM_SlackApprovalService`):
 
 - `SF_INSTANCE_URL` + `SF_ACCESS_TOKEN` — GET `/services/apexrest/mem/v1/authorize/?tx=&action=APPROVE|REJECT`
-- `SLACK_BOT_TOKEN` + `SLACK_CHANNEL` (default `#urgencias-epidemiologia`) — the chat posts the epidemiological alert; Slack buttons hit the same authorize URL
+- `SLACK_BOT_TOKEN` + `SLACK_CHANNEL` (default `D0BNHUA8R7D`, workspace `T06E6HP8A2W`) — the chat posts the epidemiological alert and the same two HITL actions into that DM canvas; Slack buttons hit the same authorize URL and refresh the same canvas
 - Deploy `salesforce/classes/MEM_SlackApprovalService.cls` to the org
 
 Slack MCP for Cursor: `.cursor/mcp.json` points at `https://mcp.slack.com/mcp`. Authenticate Slack (and Salesforce) from Cursor Settings → MCP.

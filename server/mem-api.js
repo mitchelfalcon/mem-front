@@ -10,7 +10,8 @@ const APEX_DIR = path.join(__dirname, "..", "salesforce", "classes");
 
 const HOSPITAL_ID = "001xx000003DGw2AAG";
 const DEFAULT_TX = "AWU-SEDE-NORTE-50";
-const DEFAULT_CHANNEL = "#mem-urgencias-epidemiologia";
+const SLACK_TEAM_ID = process.env.SLACK_TEAM_ID || "T06E6HP8A2W";
+const DEFAULT_CHANNEL = "D0BNHUA8R7D";
 const SF_API = process.env.SF_API_VERSION || "62.0";
 
 const LOCAL_APEX = [
@@ -27,6 +28,26 @@ const APPROVE_BODY =
   '["ÉXITO": "AWU Aprobada por Director Médico. 50 Camas UCI Bloqueadas en red."]';
 const REJECT_BODY =
   '["RECHAZADO": "Alerta epidemiológica descartada. Se mantiene protocolo estacional."]';
+
+let lastCanvasId = process.env.SLACK_CANVAS_ID || null;
+let lastDispatch = null;
+
+function slackChannel() {
+  return process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
+}
+
+function slackTeamId() {
+  return process.env.SLACK_TEAM_ID || SLACK_TEAM_ID;
+}
+
+function slackClientUrl(channel = slackChannel()) {
+  return `https://app.slack.com/client/${slackTeamId()}/${channel}`;
+}
+
+function slackCanvasUrl(canvasId) {
+  if (!canvasId) return null;
+  return `https://app.slack.com/docs/${slackTeamId()}/${canvasId}`;
+}
 
 function sendJson(res, status, payload) {
   res.statusCode = status;
@@ -174,6 +195,134 @@ function ragSlackBlocks({ tx, approveUrl, rejectUrl, knowledge, trace }) {
       ],
     },
   ];
+}
+
+function canvasMarkdown({ tx, approveUrl, rejectUrl, knowledge, trace, decision }) {
+  const decisionBlock = decision
+    ? `\n---\n\n## Actualización HITL\n- **Acción:** ${decision.action}\n- **Resultado:** ${decision.body}\n`
+    : "";
+  return `# 🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO
+
+**Sede Hospitalaria:** Sede Norte (\`${HOSPITAL_ID}\`)
+**Estado del Sistema:** Freno Matemático tanh Activado por Incertidumbre Epistémica.
+**tx:** \`${tx}\`
+
+---
+
+**Camas UCI Disponibles:** \`${knowledge.camasUciDisponibles} unidades libres\`
+**Métrica Función tanh:** \`${knowledge.porcentajeMetricaTanh}% saturación\`
+**Confianza Agéntica (AUQ):** \`${(knowledge.auqScore * 100).toFixed(2)}% (Exigido ≥ 99.9%)\`
+**Privacidad Diferencial:** \`Activa (Ruido Laplaciano)\`
+
+---
+
+**Consulta RAG Knowledge (Protocolo Sector Salud):**
+_${knowledge.protocoloSanitarioRag}_
+
+**Trazabilidad:** \`${trace.source}\` · actor *${trace.actor}*
+${trace.note} · ${trace.event} ${trace.auditId} · ${trace.dpHash}
+
+**Apex local enviado:**
+${LOCAL_APEX.map((name) => `- \`${name}.cls\``).join("\n")}
+
+**DECISIONES DIRECTIVAS A OBSERVAR:**
+1. Autorizar bloqueo transaccional de 50 camas UCI vía AWU.
+2. Rechazar alerta y mantener régimen de admisión estacional.
+
+[🏥 AUTORIZAR BLOQUEO UCI (AWU)](${approveUrl})
+[❌ RECHAZAR & MANTENER ESTACIONAL](${rejectUrl})
+${decisionBlock}`;
+}
+
+async function slackApi(method, body) {
+  const token = process.env.SLACK_BOT_TOKEN;
+  if (!token) return { ok: false, error: "SLACK_BOT_TOKEN no configurado" };
+  const response = await fetch(`https://slack.com/api/${method}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json; charset=utf-8",
+    },
+    body: JSON.stringify(body),
+  });
+  return response.json();
+}
+
+async function upsertSlackCanvas({ channel, markdown }) {
+  const title = "MEM HERA · Alerta AUQ Sede Norte";
+  const info = await slackApi("conversations.info", { channel });
+  const existingId =
+    lastCanvasId ||
+    info.channel?.properties?.canvas?.file_id ||
+    info.channel?.properties?.canvas?.id ||
+    info.channel?.properties?.canvas?.canvas_id;
+
+  if (existingId) {
+    const edited = await slackApi("canvases.edit", {
+      canvas_id: existingId,
+      changes: [{ operation: "replace", document_content: { type: "markdown", markdown } }],
+    });
+    if (edited.ok) {
+      lastCanvasId = existingId;
+      return canvasResult({ canvasId: existingId, op: "edit", channel });
+    }
+  }
+
+  const channelCanvas = await slackApi("conversations.canvases.create", {
+    channel_id: channel,
+    title,
+    document_content: { type: "markdown", markdown },
+  });
+  if (channelCanvas.ok) {
+    lastCanvasId = channelCanvas.canvas_id;
+    return canvasResult({ canvasId: channelCanvas.canvas_id, op: "create_channel", channel });
+  }
+
+  if (channelCanvas.error === "channel_canvas_already_exists") {
+    const retryInfo = await slackApi("conversations.info", { channel });
+    const retryId =
+      retryInfo.channel?.properties?.canvas?.file_id || retryInfo.channel?.properties?.canvas?.id;
+    if (retryId) {
+      const edited = await slackApi("canvases.edit", {
+        canvas_id: retryId,
+        changes: [{ operation: "replace", document_content: { type: "markdown", markdown } }],
+      });
+      lastCanvasId = retryId;
+      return canvasResult({
+        canvasId: retryId,
+        op: "edit_existing",
+        channel,
+        error: edited.error,
+        ok: Boolean(edited.ok),
+      });
+    }
+  }
+
+  const standalone = await slackApi("canvases.create", {
+    title,
+    channel_id: channel,
+    document_content: { type: "markdown", markdown },
+  });
+  if (standalone.ok) lastCanvasId = standalone.canvas_id;
+  return canvasResult({
+    canvasId: standalone.canvas_id,
+    op: "create_standalone",
+    channel,
+    error: standalone.error || channelCanvas.error,
+    ok: Boolean(standalone.ok),
+  });
+}
+
+function canvasResult({ canvasId, op, channel, error, ok }) {
+  return {
+    ok: ok ?? Boolean(canvasId),
+    canvas_id: canvasId || null,
+    op,
+    error,
+    channel,
+    clientUrl: slackClientUrl(channel),
+    canvasUrl: slackCanvasUrl(canvasId),
+  };
 }
 
 async function postSlackMessage({ channel, text, blocks, threadTs }) {
@@ -340,24 +489,30 @@ function readJsonBody(req) {
 async function startChatDispatch({ tx, approveUrl, rejectUrl }) {
   const files = readLocalApex();
   const { knowledge, trace } = knowledgeAndTrace();
-  const channel = process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
+  const channel = slackChannel();
   const blocks = ragSlackBlocks({ tx, approveUrl, rejectUrl, knowledge, trace });
+  const markdown = canvasMarkdown({ tx, approveUrl, rejectUrl, knowledge, trace });
   const slack = await postSlackMessage({
     channel,
     text: "🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO — Sede Norte. Apex local adjunto.",
     blocks,
   });
+  const canvas = await upsertSlackCanvas({ channel, markdown });
   const uploads = await uploadApexToSlack({ channel, threadTs: slack.ts, files });
   const salesforce = await upsertApexToSalesforce(files);
+  lastDispatch = { tx, approveUrl, rejectUrl, knowledge, trace, channel, canvasId: canvas.canvas_id };
+  const clientUrl = slackClientUrl(channel);
   return {
     ok: true,
     tx,
     hospitalId: HOSPITAL_ID,
     channel,
+    teamId: slackTeamId(),
+    clientUrl,
     classes: files.map(({ name, filename, bytes }) => ({ name, filename, bytes })),
     knowledge,
     trace,
-    slack: { ...slack, uploads },
+    slack: { ...slack, uploads, canvas, clientUrl, canvasUrl: canvas.canvasUrl },
     salesforce,
     approveUrl,
     rejectUrl,
@@ -387,9 +542,68 @@ export async function memApiMiddleware(req, res, next) {
       const tx = url.searchParams.get("tx") || DEFAULT_TX;
       const action = (url.searchParams.get("action") || "REJECT").toUpperCase();
       const result = await callSalesforceAuthorize(tx, action === "APPROVE" ? "APPROVE" : "REJECT");
+      const channel = slackChannel();
+      const clientUrl = slackClientUrl(channel);
+      const ctx = lastDispatch || {
+        ...knowledgeAndTrace(),
+        tx,
+        approveUrl: `${publicBase(req)}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=APPROVE`,
+        rejectUrl: `${publicBase(req)}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=REJECT`,
+        channel,
+      };
+      const decision = { action, body: result.body };
+      if (ctx.canvasId) lastCanvasId = ctx.canvasId;
+      const slackUpdate = await postSlackMessage({
+        channel,
+        text:
+          action === "APPROVE"
+            ? "AWU aprobada — 50 camas UCI bloqueadas."
+            : "Alerta rechazada — se mantiene protocolo estacional.",
+        blocks: [
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text:
+                action === "APPROVE"
+                  ? "*🏥 AUTORIZAR BLOQUEO UCI (AWU)* — actualización en este canal.\n" + result.body
+                  : "*❌ RECHAZAR & MANTENER ESTACIONAL* — actualización en este canal.\n" + result.body,
+            },
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                style: "danger",
+                text: { type: "plain_text", text: "🏥 AUTORIZAR BLOQUEO UCI (AWU)", emoji: true },
+                url: ctx.approveUrl,
+              },
+              {
+                type: "button",
+                text: { type: "plain_text", text: "❌ RECHAZAR & MANTENER ESTACIONAL", emoji: true },
+                url: ctx.rejectUrl,
+              },
+            ],
+          },
+        ],
+      });
+      const canvas = await upsertSlackCanvas({
+        channel,
+        markdown: canvasMarkdown({ ...ctx, decision }),
+      });
       const wantsJson = String(req.headers.accept || "").includes("application/json");
       if (wantsJson) {
-        sendJson(res, result.ok ? 200 : 502, { ok: result.ok, tx, action, ...result });
+        sendJson(res, result.ok ? 200 : 502, {
+          ok: result.ok,
+          tx,
+          action,
+          channel,
+          clientUrl,
+          canvas,
+          slack: slackUpdate,
+          ...result,
+        });
         return;
       }
       res.statusCode = 200;
@@ -402,7 +616,7 @@ export async function memApiMiddleware(req, res, next) {
   <body>
     <h1>${action === "APPROVE" ? "AWU aprobada" : "Alerta rechazada"}</h1>
     <p>${result.body.replace(/[<>]/g, "")}</p>
-    <p style="color:#747474;font-size:12px">tx=${tx}${result.proxied ? " · Salesforce" : " · local"}</p>
+    <p style="color:#747474;font-size:12px">tx=${tx}${result.proxied ? " · Salesforce" : " · local"} · <a href="${clientUrl}">${channel}</a></p>
   </body>
 </html>`);
     } catch (error) {

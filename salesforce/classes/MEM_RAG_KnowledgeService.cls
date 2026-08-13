@@ -113,7 +113,7 @@ public with sharing class MEM_RAG_KnowledgeService {
         String webhookUrl = 'callout:Slack_MEM_Webhook_Credential';
         
         String jsonPayload = '{'
-            + '"channel": "#mem-urgencias-epidemiologia",'
+            + '"channel": "D0BNHUA8R7D",'
             + '"username": "MEM Healthcare — Gran Maestro AUQ",'
             + '"icon_emoji": ":hospital:",'
             + '"blocks": ['

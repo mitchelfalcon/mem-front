@@ -25,11 +25,23 @@ export type TracePayload = {
   event: string;
 };
 
+export type SlackCanvasPayload = {
+  ok?: boolean;
+  canvas_id?: string | null;
+  op?: string;
+  error?: string;
+  channel?: string;
+  clientUrl?: string;
+  canvasUrl?: string | null;
+};
+
 export type ChatStartResponse = {
   ok: boolean;
   tx: string;
   hospitalId?: string;
   channel?: string;
+  teamId?: string;
+  clientUrl?: string;
   classes?: { name: string; filename: string; bytes: number }[];
   knowledge?: KnowledgePayload;
   trace?: TracePayload;
@@ -42,6 +54,9 @@ export type ChatStartResponse = {
     ts?: string;
     error?: string;
     reason?: string;
+    clientUrl?: string;
+    canvasUrl?: string | null;
+    canvas?: SlackCanvasPayload;
     uploads?: { filename: string; ok: boolean; error?: string; reason?: string }[];
   };
   salesforce?: {
@@ -60,6 +75,9 @@ export type AuthorizeResponse = {
   proxied?: boolean;
   reason?: string;
   error?: string;
+  channel?: string;
+  clientUrl?: string;
+  canvas?: SlackCanvasPayload;
 };
 
 export async function startHeraSession(tx = MEM_AWU_TX): Promise<ChatStartResponse> {

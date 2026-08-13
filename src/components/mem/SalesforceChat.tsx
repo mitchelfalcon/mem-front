@@ -231,7 +231,7 @@ function SlackAction({
   children: string;
   variant: "primary" | "secondary";
   disabled?: boolean;
-  onDecided: (action: "APPROVE" | "REJECT", body: string, ok: boolean) => void;
+  onDecided: (action: "APPROVE" | "REJECT", body: string, ok: boolean, clientUrl?: string) => void;
 }) {
   const [status, setStatus] = useState<"idle" | "working" | "done" | "error">("idle");
 
@@ -241,7 +241,7 @@ function SlackAction({
     try {
       const result = await authorizeAwu(action);
       setStatus(result.ok ? "done" : "error");
-      onDecided(action, result.body || result.error || "", result.ok);
+      onDecided(action, result.body || result.error || "", result.ok, result.clientUrl);
     } catch {
       setStatus("error");
       onDecided(action, "No se pudo contactar MEM_SlackApprovalService", false);
@@ -270,11 +270,14 @@ function SlackCard({ time, session }: { time: string; session: ChatStartResponse
   const [locked, setLocked] = useState(false);
   const knowledge = session?.knowledge;
   const slack = session?.slack;
-  const channel = session?.channel || slack?.channel || "#mem-urgencias-epidemiologia";
+  const channel = session?.channel || slack?.channel || "D0BNHUA8R7D";
+  const clientUrl =
+    session?.clientUrl || slack?.clientUrl || slack?.canvas?.clientUrl || `https://app.slack.com/client/T06E6HP8A2W/${channel}`;
+  const canvasUrl = slack?.canvasUrl || slack?.canvas?.canvasUrl;
 
-  let header = "MEM Healthcare — Gran Maestro AUQ · #mem-urgencias-epidemiologia";
+  let header = `MEM Healthcare — Gran Maestro AUQ · ${channel}`;
   if (!session) header = "Publicando Apex local y alerta AUQ en Slack…";
-  else if (slack?.posted) header = `Alerta actualizada en ${channel}`;
+  else if (slack?.posted) header = `Alerta y canvas actualizados en ${channel}`;
   else if (slack?.reason) header = `${slack.reason} · mensaje RAG listo`;
   else if (slack?.error) header = slack.error;
 
@@ -309,14 +312,32 @@ function SlackCard({ time, session }: { time: string; session: ChatStartResponse
                 Apex local: {session.classes.map((item) => item.filename).join(", ")}
               </p>
             )}
+            <p className="text-[11px] leading-4 text-[#747474]">
+              Canal HITL:{" "}
+              <a href={clientUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0176d3] underline">
+                {channel}
+              </a>
+              {canvasUrl ? (
+                <>
+                  {" · "}
+                  <a href={canvasUrl} target="_blank" rel="noreferrer" className="font-semibold text-[#0176d3] underline">
+                    mismo canvas
+                  </a>
+                </>
+              ) : (
+                " · mismo canvas y mismas acciones"
+              )}
+            </p>
             <div className="flex flex-wrap gap-1.5 pt-1">
               <SlackAction
                 action="APPROVE"
                 variant="primary"
                 disabled={locked}
-                onDecided={(_action, body) => {
+                onDecided={(_action, body, _ok, decisionUrl) => {
                   setLocked(true);
-                  setDecision(body);
+                  setDecision(
+                    `${body}${decisionUrl ? ` · canvas actualizado en ${channel}` : " · mismas acciones en el canvas HITL"}`,
+                  );
                 }}
               >
                 AUTORIZAR BLOQUEO UCI (AWU)
@@ -325,9 +346,11 @@ function SlackCard({ time, session }: { time: string; session: ChatStartResponse
                 action="REJECT"
                 variant="secondary"
                 disabled={locked}
-                onDecided={(_action, body) => {
+                onDecided={(_action, body, _ok, decisionUrl) => {
                   setLocked(true);
-                  setDecision(body);
+                  setDecision(
+                    `${body}${decisionUrl ? ` · canvas actualizado en ${channel}` : " · mismas acciones en el canvas HITL"}`,
+                  );
                 }}
               >
                 RECHAZAR Y MANTENER ESTACIONAL
