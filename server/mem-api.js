@@ -33,15 +33,19 @@ let lastCanvasId = process.env.SLACK_CANVAS_ID || null;
 let lastDispatch = null;
 let lastHeraSession = null;
 let localSlackMessages = [];
-let heraThread = [
-  {
-    kind: "bookend",
-    icon: "chat",
-    prefix: "Chat started by ",
-    name: "Agente HERA",
-    suffix: " • listo",
-  },
-];
+let heraThread = emptyHeraThread();
+
+function emptyHeraThread() {
+  return [
+    {
+      kind: "bookend",
+      icon: "chat",
+      prefix: "Chat started by ",
+      name: "Agente HERA",
+      suffix: " • chatbot",
+    },
+  ];
+}
 
 function slackChannel() {
   return process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
@@ -623,112 +627,44 @@ async function heraRespond(text, req) {
   pushSlack("Director Médico", text);
 
   const intent = matchIntent(text);
-  const replies = [];
   const { knowledge } = knowledgeAndTrace();
+  let replyText =
+    "Soy el Agente HERA. Puedo evaluar admisiones, consultar Knowledge, escalar a Slack o autorizar el bloqueo AWU. ¿Qué necesitas?";
 
   if (intent === "analyze") {
-    replies.push({
-      kind: "outbound",
-      name: "Agente HERA",
-      time,
-      text:
-        "He analizado 1,247 notas de evolución clínica. Detecto un incremento anómalo en patrones respiratorios compatibles con endemia viral (p90 = 87.05%). Sin embargo, la certeza analítica Confianza_AUQ__c = 0.985 no alcanza el umbral de 0.999. Freno hiperbólico tanh activo. Freno_Tanh_Activado__c = True. Se detiene la reserva autónoma.",
-    });
-    replies.push({
-      kind: "fields",
-      items: [
-        { object: "Cama_UCI__c", detail: "100 total · 18 libres" },
-        { object: "Alerta_Epidemiologica__c", detail: "Estado__c → PENDIENTE" },
-        { object: "MEM_Start_Event__e", detail: "disparo" },
-      ],
-    });
+    replyText =
+      "Revisé las últimas 24 h en Sede Norte: 1,247 notas clínicas, p90 epidémico 87.05% y AUQ 0.985 (hace falta ≥ 0.999). El freno tanh está activo, así que no aparto camas sola. ¿Consulto el protocolo RAG o lo escalamos a Slack?";
   } else if (intent === "knowledge") {
-    replies.push({ kind: "bookend", icon: "chat", label: "Fase 2 de 4 · Grounding RAG · Knowledge" });
-    replies.push({
-      kind: "outbound",
-      name: "Agente HERA",
-      time,
-      text:
-        "Consultando base de conocimiento RAG... Protocolo de Emergencia Sanitaria Nivel 2 identificado: Se requiere validación humana obligatoria (Human-in-the-Loop). Adjunto los artículos de Knowledge. Procedo a iniciar comunicación con el Doctor en Turno de la Sede Norte.",
-    });
-    replies.push({
-      kind: "file",
-      direction: "outbound",
-      name: "Agente HERA",
-      time,
-      filename: "Articulo_2_Vigilancia_Epidemiologica.csv",
-      subtitle: "Vigilancia Epidemiológica y Sistemas de Alertamiento",
-      downloadId: "vigilancia",
-    });
-    replies.push({
-      kind: "file",
-      direction: "outbound",
-      name: "Agente HERA",
-      time,
-      filename: "Articulo_1_PRONAM.csv",
-      subtitle: "Protocolos Nacionales de Atención Médica (PRONAM)",
-      downloadId: "pronam",
-    });
-    replies.push({ kind: "knowledge" });
+    replyText =
+      "En Knowledge encontré Protocolo de Emergencia Sanitaria Nivel 2 (SINAVE / PRONAM). Hay que validar con un humano. Artículos: Vigilancia Epidemiológica y PRONAM. ¿Lo mando a Slack para autorizar 50 camas UCI?";
   } else if (intent === "slack") {
     const base = publicBase(req);
     const tx = DEFAULT_TX;
-    const payload = await startChatDispatch({
+    lastHeraSession = await startChatDispatch({
       tx,
       approveUrl: `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=APPROVE`,
       rejectUrl: `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=REJECT`,
     });
-    lastHeraSession = payload;
-    replies.push({ kind: "bookend", icon: "chat", label: "Fase 3 de 4 · Escalado Slack · HITL" });
-    replies.push({
-      kind: "outbound",
-      name: "Agente HERA",
-      time,
-      text: "Protocolo RAG confirmado. Estableciendo llamada con Dr. Mike y enviando informe de riesgo a Slack: '¿Autoriza el apartado de 50 camas UCI en Sede Norte?'",
-    });
-    replies.push({ kind: "slack", time });
-    localSlackMessages = [...localSlackMessages, hitlSlackMessage(req)];
-  } else if (intent === "approve" || intent === "reject") {
-    const action = intent === "approve" ? "APPROVE" : "REJECT";
-    const result = await callSalesforceAuthorize(DEFAULT_TX, action);
-    replies.push({
-      kind: "inbound",
-      name: "Dr. Mike",
-      initials: "MK",
-      time,
-      text: intent === "approve" ? "→ Clic en 'Sí, Apartar 50 Camas UCI'" : "→ Clic en 'Rechazar y mantener estacional'",
-    });
-    replies.push({ kind: "bookend", icon: "chat", label: "Fase 4 de 4 · Commit AWU · Audit Log" });
-    replies.push({
-      kind: "outbound",
-      name: "Agente HERA",
-      time,
-      text:
-        intent === "approve"
-          ? "Confirmación recibida del Doctor en Turno vía Slack. Se ha completado la reserva transaccional de 50 camas UCI en Sede Norte — Cama_UCI__c Estado__c = 'Bloqueada_Epidemia'. Registro inmutable con Privacidad Diferencial Laplaciana asentado en MEM_Clinical_Audit__c (AUD-883). Firma_Criptografica_DP__c sellada. Trazabilidad completa HIPAA garantizada."
-          : `${result.body} Se mantiene el protocolo estacional. Trazabilidad AUD-883 actualizada.`,
-    });
-    if (intent === "approve") replies.push({ kind: "audit", time });
-  } else {
-    replies.push({
-      kind: "outbound",
-      name: "Agente HERA",
-      time,
-      text:
-        "Listo. Puedo evaluar admisiones de Sede Norte, consultar Knowledge RAG, escalar HITL a Slack o autorizar el bloqueo AWU. ¿Qué procedemos?",
-    });
+    replyText =
+      "Listo: ya envié el HITL a Slack (D0BNHUA8R7D). Pregunta para el Director: ¿autoriza apartar 50 camas UCI en Sede Norte? Puedes decirme autorizar o rechazar.";
+  } else if (intent === "approve") {
+    await callSalesforceAuthorize(DEFAULT_TX, "APPROVE");
+    replyText =
+      "Autorizado. Quedaron bloqueadas 50 camas UCI en Sede Norte (Bloqueada_Epidemia) y el audit AUD-883 quedó sellado. ¿Algo más?";
+  } else if (intent === "reject") {
+    const result = await callSalesforceAuthorize(DEFAULT_TX, "REJECT");
+    replyText = `${result.body} Se mantiene el protocolo estacional. ¿Quieres otra consulta?`;
   }
 
-  heraThread = [...heraThread, ...replies];
-  for (const reply of replies) {
-    if (reply.kind === "outbound") pushSlack("Agente HERA", reply.text);
-  }
+  const outbound = { kind: "outbound", name: "Agente HERA", time, text: replyText };
+  heraThread = [...heraThread, outbound];
+  pushSlack("Agente HERA", replyText);
 
   return {
     ok: true,
     intent,
     items: heraThread,
-    replies,
+    replies: [outbound],
     session: lastHeraSession,
     knowledge,
   };
@@ -859,15 +795,7 @@ export async function memApiMiddleware(req, res, next) {
     lastHeraSession = null;
     lastCanvasId = process.env.SLACK_CANVAS_ID || null;
     localSlackMessages = [];
-    heraThread = [
-      {
-        kind: "bookend",
-        icon: "chat",
-        prefix: "Chat started by ",
-        name: "Agente HERA",
-        suffix: " • listo",
-      },
-    ];
+    heraThread = emptyHeraThread();
     sendJson(res, 200, { ok: true, cleared: true, messages: [], items: heraThread });
     return;
   }

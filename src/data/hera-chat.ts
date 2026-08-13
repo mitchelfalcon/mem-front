@@ -71,7 +71,7 @@ export const HERA_EMPTY_TRANSCRIPT: ChatItem[] = [
     icon: "chat",
     prefix: "Chat started by ",
     name: "Agente HERA",
-    suffix: " • listo",
+    suffix: " • chatbot",
   },
 ];
 
