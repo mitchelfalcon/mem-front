@@ -8,6 +8,7 @@ import warningIcon from "../../assets/slds-chat/warning.svg";
 import drArmando from "../../assets/dr-armando.png";
 import avatar from "../../assets/avatar.png";
 import { HERA_TRANSCRIPT, type ChatItem, type ChatText } from "../../data/hera-chat";
+import { mutePresentationAudio } from "../../pages/Presentation";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -316,6 +317,7 @@ export function SalesforceChat() {
     }
     setMinimized(false);
     setOpen(true);
+    mutePresentationAudio();
   };
 
   const send = (e: FormEvent) => {
