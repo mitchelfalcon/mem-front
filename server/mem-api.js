@@ -31,6 +31,7 @@ const REJECT_BODY =
 
 let lastCanvasId = process.env.SLACK_CANVAS_ID || null;
 let lastDispatch = null;
+let localSlackMessages = [];
 
 function slackChannel() {
   return process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
@@ -519,6 +520,63 @@ async function startChatDispatch({ tx, approveUrl, rejectUrl }) {
   };
 }
 
+function hitlSlackMessage(req) {
+  const ctx = lastDispatch || {
+    ...knowledgeAndTrace(),
+    tx: DEFAULT_TX,
+    approveUrl: `${publicBase(req)}/api/mem/authorize?tx=${encodeURIComponent(DEFAULT_TX)}&action=APPROVE`,
+    rejectUrl: `${publicBase(req)}/api/mem/authorize?tx=${encodeURIComponent(DEFAULT_TX)}&action=REJECT`,
+    channel: slackChannel(),
+  };
+  const { knowledge, trace, tx, approveUrl, rejectUrl } = ctx;
+  return {
+    ts: "hitl-auq",
+    user: "MEM Healthcare — Gran Maestro AUQ",
+    bot: true,
+    kind: "hitl",
+    text: "🚨 ALERTA CRÍTICA: EVIDENCIA AUQ Y REPORTE EPIDEMIOLÓGICO",
+    knowledge,
+    trace,
+    tx,
+    approveUrl,
+    rejectUrl,
+  };
+}
+
+async function slackConversation(req) {
+  const channel = slackChannel();
+  const clientUrl = slackClientUrl(channel);
+  const token = process.env.SLACK_BOT_TOKEN;
+  let live = [];
+  let liveError = null;
+  if (token) {
+    const history = await slackApi("conversations.history", { channel, limit: 50 });
+    if (history.ok && Array.isArray(history.messages)) {
+      live = [...history.messages].reverse().map((msg) => ({
+        ts: msg.ts,
+        user: msg.username || msg.user || "Slack",
+        bot: Boolean(msg.bot_id || msg.subtype === "bot_message"),
+        kind: "text",
+        text: msg.text || "",
+      }));
+    } else {
+      liveError = history.error || "conversations.history falló";
+    }
+  }
+  const seeded = localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)];
+  if (!localSlackMessages.length) localSlackMessages = seeded;
+  const messages = live.length ? [...live, ...localSlackMessages.filter((m) => m.ts === "hitl-auq" || m.local)] : localSlackMessages;
+  return {
+    ok: true,
+    channel,
+    teamId: slackTeamId(),
+    clientUrl,
+    posted: Boolean(token && !liveError),
+    reason: token ? liveError : "SLACK_BOT_TOKEN no configurado · complemento MEM en Heroku",
+    messages,
+  };
+}
+
 export async function memApiMiddleware(req, res, next) {
   const url = new URL(req.url || "/", "http://localhost");
 
@@ -592,6 +650,20 @@ export async function memApiMiddleware(req, res, next) {
         channel,
         markdown: canvasMarkdown({ ...ctx, decision }),
       });
+      localSlackMessages = [
+        ...(localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)]),
+        {
+          ts: `decision-${Date.now()}`,
+          user: "MEM Healthcare — Gran Maestro AUQ",
+          bot: true,
+          kind: "text",
+          text:
+            action === "APPROVE"
+              ? `🏥 AUTORIZAR BLOQUEO UCI (AWU)\n${result.body}`
+              : `❌ RECHAZAR & MANTENER ESTACIONAL\n${result.body}`,
+          local: true,
+        },
+      ];
       const wantsJson = String(req.headers.accept || "").includes("application/json");
       if (wantsJson) {
         sendJson(res, result.ok ? 200 : 502, {
@@ -619,6 +691,41 @@ export async function memApiMiddleware(req, res, next) {
     <p style="color:#747474;font-size:12px">tx=${tx}${result.proxied ? " · Salesforce" : " · local"} · <a href="${clientUrl}">${channel}</a></p>
   </body>
 </html>`);
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: String(error?.message || error) });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/mem/slack/conversation") {
+    try {
+      sendJson(res, 200, await slackConversation(req));
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: String(error?.message || error) });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/mem/slack/message") {
+    try {
+      const body = await readJsonBody(req);
+      const text = String(body.text || "").trim();
+      if (!text) {
+        sendJson(res, 400, { ok: false, error: "text requerido" });
+        return;
+      }
+      const channel = slackChannel();
+      const slack = await postSlackMessage({ channel, text });
+      const message = {
+        ts: slack.ts || `local-${Date.now()}`,
+        user: "Nailea",
+        bot: false,
+        kind: "text",
+        text,
+        local: true,
+      };
+      localSlackMessages = [...(localSlackMessages.length ? localSlackMessages : [hitlSlackMessage(req)]), message];
+      sendJson(res, 200, { ok: true, posted: Boolean(slack.posted), message, slack });
     } catch (error) {
       sendJson(res, 500, { ok: false, error: String(error?.message || error) });
     }

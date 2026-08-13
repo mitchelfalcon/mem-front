@@ -102,3 +102,44 @@ export async function authorizeAwu(
   );
   return (await response.json()) as AuthorizeResponse;
 }
+
+export type SlackThreadMessage = {
+  ts: string;
+  user: string;
+  bot?: boolean;
+  kind?: "text" | "hitl";
+  text: string;
+  knowledge?: KnowledgePayload;
+  trace?: TracePayload;
+  tx?: string;
+  approveUrl?: string;
+  rejectUrl?: string;
+  local?: boolean;
+};
+
+export type SlackConversationResponse = {
+  ok: boolean;
+  channel: string;
+  teamId?: string;
+  clientUrl?: string;
+  posted?: boolean;
+  reason?: string;
+  messages: SlackThreadMessage[];
+  error?: string;
+};
+
+export async function fetchSlackConversation(): Promise<SlackConversationResponse> {
+  const response = await fetch("/api/mem/slack/conversation", {
+    headers: { Accept: "application/json" },
+  });
+  return (await response.json()) as SlackConversationResponse;
+}
+
+export async function postSlackComposer(text: string): Promise<{ ok: boolean; message?: SlackThreadMessage }> {
+  const response = await fetch("/api/mem/slack/message", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  return (await response.json()) as { ok: boolean; message?: SlackThreadMessage };
+}
