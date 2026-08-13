@@ -15,7 +15,7 @@ import {
   type KnowledgeDownloadId,
 } from "../../data/hera-chat";
 import { mutePresentationAudio } from "../../pages/Presentation";
-import { authorizeAwu, type ChatStartResponse } from "../../lib/mem-slack";
+import { authorizeAwu, fetchHeraThread, replyHera, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
   "Director Médico": avatar,
@@ -484,6 +484,19 @@ export function SalesforceChat() {
 
   useEffect(() => {
     if (!visible) return;
+    let cancelled = false;
+    void fetchHeraThread().then((data) => {
+      if (cancelled) return;
+      if (Array.isArray(data.items) && data.items.length) setItems(data.items as ChatItem[]);
+      if (data.session) setSession(data.session);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) return;
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [visible, items.length, session]);
@@ -520,10 +533,11 @@ export function SalesforceChat() {
     mutePresentationAudio();
   };
 
-  const send = (e: FormEvent) => {
+  const send = async (e: FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
     if (!text) return;
+    setDraft("");
     setItems((prev) => [
       ...prev,
       {
@@ -534,7 +548,21 @@ export function SalesforceChat() {
         text,
       },
     ]);
-    setDraft("");
+    try {
+      const result = await replyHera(text);
+      if (Array.isArray(result.items)) setItems(result.items as ChatItem[]);
+      if (result.session) setSession(result.session);
+    } catch {
+      setItems((prev) => [
+        ...prev,
+        {
+          kind: "outbound",
+          name: "Agente HERA",
+          time: formatNow(),
+          text: "No pude contactar el orquestador HERA. Reintenta el mensaje.",
+        },
+      ]);
+    }
   };
 
   const onComposerKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -609,7 +637,7 @@ export function SalesforceChat() {
             <Transcript items={items} session={session} />
           </div>
 
-          <form onSubmit={send} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
+          <form onSubmit={(e) => void send(e)} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
             <div className="flex items-end gap-1.5 rounded-md border border-[#c9c9c9] bg-white px-2 py-1.5 focus-within:border-[#0250d9]">
               <textarea
                 ref={inputRef}

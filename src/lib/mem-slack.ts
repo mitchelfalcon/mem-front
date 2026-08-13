@@ -135,11 +135,26 @@ export async function fetchSlackConversation(): Promise<SlackConversationRespons
   return (await response.json()) as SlackConversationResponse;
 }
 
-export async function postSlackComposer(text: string): Promise<{ ok: boolean; message?: SlackThreadMessage }> {
-  const response = await fetch("/api/mem/slack/message", {
+export type HeraReplyResponse = {
+  ok: boolean;
+  intent?: string;
+  items?: ChatItemLike[];
+  session?: ChatStartResponse | null;
+  error?: string;
+};
+
+type ChatItemLike = Record<string, unknown>;
+
+export async function fetchHeraThread(): Promise<HeraReplyResponse> {
+  const response = await fetch("/api/mem/chat/thread", { headers: { Accept: "application/json" } });
+  return (await response.json()) as HeraReplyResponse;
+}
+
+export async function replyHera(text: string): Promise<HeraReplyResponse> {
+  const response = await fetch("/api/mem/chat/reply", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({ text }),
   });
-  return (await response.json()) as { ok: boolean; message?: SlackThreadMessage };
+  return (await response.json()) as HeraReplyResponse;
 }

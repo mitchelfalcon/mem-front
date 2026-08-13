@@ -7,7 +7,7 @@ import {
   SLACK_CLIENT_URL,
   authorizeAwu,
   fetchSlackConversation,
-  postSlackComposer,
+  replyHera,
   type SlackThreadMessage,
 } from "../lib/mem-slack";
 
@@ -44,9 +44,8 @@ export function Slack() {
     setBusy(true);
     setDraft("");
     try {
-      const result = await postSlackComposer(text);
-      if (result.message) setMessages((prev) => [...prev, result.message!]);
-      else await load();
+      await replyHera(text);
+      await load();
     } finally {
       setBusy(false);
     }

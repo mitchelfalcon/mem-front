@@ -31,7 +31,17 @@ const REJECT_BODY =
 
 let lastCanvasId = process.env.SLACK_CANVAS_ID || null;
 let lastDispatch = null;
+let lastHeraSession = null;
 let localSlackMessages = [];
+let heraThread = [
+  {
+    kind: "bookend",
+    icon: "chat",
+    prefix: "Chat started by ",
+    name: "Agente HERA",
+    suffix: " • listo",
+  },
+];
 
 function slackChannel() {
   return process.env.SLACK_CHANNEL || DEFAULT_CHANNEL;
@@ -576,6 +586,154 @@ async function slackConversation(req) {
   };
 }
 
+function clock() {
+  return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function fold(text) {
+  return String(text || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function matchIntent(text) {
+  const t = fold(text);
+  if (/autoriz|aprueb|apartar|bloqueo uci|\bawu\b|si,? apartar/.test(t)) return "approve";
+  if (/rechaz|estacional|mantener regimen|no autoriz/.test(t)) return "reject";
+  if (/slack|hitl|doctor en turno|dr\.? mike|informe de riesgo|apartado de 50/.test(t)) return "slack";
+  if (/knowledge|rag|protocolo|articulo|pronam|sinave|vigilancia/.test(t)) return "knowledge";
+  if (/admision|tendencia|sede norte|24 horas|evalua|uci|brote|auq|notas de evolucion|contesta|responde/.test(t)) {
+    return "analyze";
+  }
+  return "help";
+}
+
+function pushSlack(user, text, extra = {}) {
+  localSlackMessages = [
+    ...localSlackMessages,
+    { ts: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`, user, bot: user.includes("HERA") || user.includes("AUQ"), kind: extra.kind || "text", text, local: true, ...extra },
+  ];
+}
+
+async function heraRespond(text, req) {
+  const time = clock();
+  const inbound = { kind: "inbound", name: "Director Médico", initials: "DM", time, text };
+  heraThread = [...heraThread, inbound];
+  pushSlack("Director Médico", text);
+
+  const intent = matchIntent(text);
+  const replies = [];
+  const { knowledge } = knowledgeAndTrace();
+
+  if (intent === "analyze") {
+    replies.push({
+      kind: "outbound",
+      name: "Agente HERA",
+      time,
+      text:
+        "He analizado 1,247 notas de evolución clínica. Detecto un incremento anómalo en patrones respiratorios compatibles con endemia viral (p90 = 87.05%). Sin embargo, la certeza analítica Confianza_AUQ__c = 0.985 no alcanza el umbral de 0.999. Freno hiperbólico tanh activo. Freno_Tanh_Activado__c = True. Se detiene la reserva autónoma.",
+    });
+    replies.push({
+      kind: "fields",
+      items: [
+        { object: "Cama_UCI__c", detail: "100 total · 18 libres" },
+        { object: "Alerta_Epidemiologica__c", detail: "Estado__c → PENDIENTE" },
+        { object: "MEM_Start_Event__e", detail: "disparo" },
+      ],
+    });
+  } else if (intent === "knowledge") {
+    replies.push({ kind: "bookend", icon: "chat", label: "Fase 2 de 4 · Grounding RAG · Knowledge" });
+    replies.push({
+      kind: "outbound",
+      name: "Agente HERA",
+      time,
+      text:
+        "Consultando base de conocimiento RAG... Protocolo de Emergencia Sanitaria Nivel 2 identificado: Se requiere validación humana obligatoria (Human-in-the-Loop). Adjunto los artículos de Knowledge. Procedo a iniciar comunicación con el Doctor en Turno de la Sede Norte.",
+    });
+    replies.push({
+      kind: "file",
+      direction: "outbound",
+      name: "Agente HERA",
+      time,
+      filename: "Articulo_2_Vigilancia_Epidemiologica.csv",
+      subtitle: "Vigilancia Epidemiológica y Sistemas de Alertamiento",
+      downloadId: "vigilancia",
+    });
+    replies.push({
+      kind: "file",
+      direction: "outbound",
+      name: "Agente HERA",
+      time,
+      filename: "Articulo_1_PRONAM.csv",
+      subtitle: "Protocolos Nacionales de Atención Médica (PRONAM)",
+      downloadId: "pronam",
+    });
+    replies.push({ kind: "knowledge" });
+  } else if (intent === "slack") {
+    const base = publicBase(req);
+    const tx = DEFAULT_TX;
+    const payload = await startChatDispatch({
+      tx,
+      approveUrl: `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=APPROVE`,
+      rejectUrl: `${base}/api/mem/authorize?tx=${encodeURIComponent(tx)}&action=REJECT`,
+    });
+    lastHeraSession = payload;
+    replies.push({ kind: "bookend", icon: "chat", label: "Fase 3 de 4 · Escalado Slack · HITL" });
+    replies.push({
+      kind: "outbound",
+      name: "Agente HERA",
+      time,
+      text: "Protocolo RAG confirmado. Estableciendo llamada con Dr. Mike y enviando informe de riesgo a Slack: '¿Autoriza el apartado de 50 camas UCI en Sede Norte?'",
+    });
+    replies.push({ kind: "slack", time });
+    localSlackMessages = [...localSlackMessages, hitlSlackMessage(req)];
+  } else if (intent === "approve" || intent === "reject") {
+    const action = intent === "approve" ? "APPROVE" : "REJECT";
+    const result = await callSalesforceAuthorize(DEFAULT_TX, action);
+    replies.push({
+      kind: "inbound",
+      name: "Dr. Mike",
+      initials: "MK",
+      time,
+      text: intent === "approve" ? "→ Clic en 'Sí, Apartar 50 Camas UCI'" : "→ Clic en 'Rechazar y mantener estacional'",
+    });
+    replies.push({ kind: "bookend", icon: "chat", label: "Fase 4 de 4 · Commit AWU · Audit Log" });
+    replies.push({
+      kind: "outbound",
+      name: "Agente HERA",
+      time,
+      text:
+        intent === "approve"
+          ? "Confirmación recibida del Doctor en Turno vía Slack. Se ha completado la reserva transaccional de 50 camas UCI en Sede Norte — Cama_UCI__c Estado__c = 'Bloqueada_Epidemia'. Registro inmutable con Privacidad Diferencial Laplaciana asentado en MEM_Clinical_Audit__c (AUD-883). Firma_Criptografica_DP__c sellada. Trazabilidad completa HIPAA garantizada."
+          : `${result.body} Se mantiene el protocolo estacional. Trazabilidad AUD-883 actualizada.`,
+    });
+    if (intent === "approve") replies.push({ kind: "audit", time });
+  } else {
+    replies.push({
+      kind: "outbound",
+      name: "Agente HERA",
+      time,
+      text:
+        "Listo. Puedo evaluar admisiones de Sede Norte, consultar Knowledge RAG, escalar HITL a Slack o autorizar el bloqueo AWU. ¿Qué procedemos?",
+    });
+  }
+
+  heraThread = [...heraThread, ...replies];
+  for (const reply of replies) {
+    if (reply.kind === "outbound") pushSlack("Agente HERA", reply.text);
+  }
+
+  return {
+    ok: true,
+    intent,
+    items: heraThread,
+    replies,
+    session: lastHeraSession,
+    knowledge,
+  };
+}
+
 export async function memApiMiddleware(req, res, next) {
   const url = new URL(req.url || "/", "http://localhost");
 
@@ -698,9 +856,39 @@ export async function memApiMiddleware(req, res, next) {
 
   if (req.method === "POST" && (url.pathname === "/api/mem/slack/clear" || url.pathname === "/api/mem/chat/clear")) {
     lastDispatch = null;
+    lastHeraSession = null;
     lastCanvasId = process.env.SLACK_CANVAS_ID || null;
     localSlackMessages = [];
-    sendJson(res, 200, { ok: true, cleared: true, messages: [] });
+    heraThread = [
+      {
+        kind: "bookend",
+        icon: "chat",
+        prefix: "Chat started by ",
+        name: "Agente HERA",
+        suffix: " • listo",
+      },
+    ];
+    sendJson(res, 200, { ok: true, cleared: true, messages: [], items: heraThread });
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/mem/chat/thread") {
+    sendJson(res, 200, { ok: true, items: heraThread, session: lastHeraSession });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/mem/chat/reply") {
+    try {
+      const body = await readJsonBody(req);
+      const text = String(body.text || "").trim();
+      if (!text) {
+        sendJson(res, 400, { ok: false, error: "text requerido" });
+        return;
+      }
+      sendJson(res, 200, await heraRespond(text, req));
+    } catch (error) {
+      sendJson(res, 500, { ok: false, error: String(error?.message || error) });
+    }
     return;
   }
 
@@ -721,18 +909,22 @@ export async function memApiMiddleware(req, res, next) {
         sendJson(res, 400, { ok: false, error: "text requerido" });
         return;
       }
-      const channel = slackChannel();
-      const slack = await postSlackMessage({ channel, text });
-      const message = {
-        ts: slack.ts || `local-${Date.now()}`,
-        user: "Nailea",
-        bot: false,
-        kind: "text",
-        text,
-        local: true,
-      };
-      localSlackMessages = [...localSlackMessages, message];
-      sendJson(res, 200, { ok: true, posted: Boolean(slack.posted), message, slack });
+      const result = await heraRespond(text, req);
+      const outbound = [...result.replies].reverse().find((item) => item.kind === "outbound");
+      sendJson(res, 200, {
+        ok: true,
+        posted: false,
+        intent: result.intent,
+        message: {
+          ts: `hera-${Date.now()}`,
+          user: "Agente HERA",
+          bot: true,
+          kind: "text",
+          text: outbound?.text || "Listo.",
+        },
+        items: result.items,
+        session: result.session,
+      });
     } catch (error) {
       sendJson(res, 500, { ok: false, error: String(error?.message || error) });
     }
