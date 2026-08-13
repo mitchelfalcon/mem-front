@@ -1,4 +1,5 @@
 import { Fragment, type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, Loader2, Minus, Send, X } from "lucide-react";
 import chatIcon from "../../assets/slds-chat/chat.svg";
 import endChatIcon from "../../assets/slds-chat/end-chat.svg";
@@ -18,7 +19,6 @@ import { mutePresentationAudio } from "../../pages/Presentation";
 import { authorizeAwu, fetchHeraThread, replyHera, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
-  "Director Médico": avatar,
   "Dr. Mike": drArmando,
 };
 
@@ -27,6 +27,51 @@ function SldsIcon({ src, size = 16, alt = "" }: { src: string; size?: number; al
     <span className="inline-flex shrink-0 overflow-clip" style={{ width: size, height: size }} aria-hidden={alt ? undefined : true}>
       <img src={src} alt={alt} width={size} height={size} className="h-full w-full object-contain" />
     </span>
+  );
+}
+
+function AgentAvatar({ size, typing = false }: { size: number; typing?: boolean }) {
+  const showRings = typing && size >= 48;
+  return (
+    <span className={`relative shrink-0 ${typing ? "hera-avatar-typing" : ""}`} style={{ width: size, height: size }}>
+      {showRings && (
+        <>
+          <span className="hera-typing-ring" />
+          <span className="hera-typing-ring hera-typing-ring-delay" />
+        </>
+      )}
+      <img
+        src={avatar}
+        alt="Agente HERA"
+        className="h-full w-full rounded-full object-cover ring-2 ring-white shadow-[0_8px_20px_rgba(3,35,77,0.28)]"
+      />
+      {typing && (
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[#03234d]/45 backdrop-blur-[1px]">
+          <span className="flex items-center gap-1">
+            <span className="hera-dot" />
+            <span className="hera-dot" />
+            <span className="hera-dot" />
+          </span>
+        </span>
+      )}
+      <span
+        className={`absolute bottom-0 right-0 rounded-full border-2 border-white ${typing ? "bg-amber-400" : "bg-[#2e844a]"}`}
+        style={{ width: size * 0.26, height: size * 0.26 }}
+      />
+    </span>
+  );
+}
+
+function TypingBubble() {
+  return (
+    <li className="hera-msg-in flex flex-col items-end">
+      <div className="flex items-center gap-1 rounded-[12px] rounded-br-none bg-[#03234d] px-3 py-2.5">
+        <span className="hera-dot" />
+        <span className="hera-dot" />
+        <span className="hera-dot" />
+      </div>
+      <p className="pt-0.5 text-[10px] leading-[14px] text-[#747474]">Agente HERA • escribiendo</p>
+    </li>
   );
 }
 
@@ -108,7 +153,7 @@ function InboundMessage({
 }) {
   const photo = item.avatar ?? AVATARS[item.name];
   return (
-    <li className={`flex items-end gap-2 ${consecutive ? "-mt-1.5" : ""}`}>
+    <li className={`hera-msg-in flex items-end gap-2 ${consecutive ? "-mt-1.5" : ""}`}>
       <span className={`h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#f3f3f3] text-[11px] font-semibold leading-8 text-[#2e2e2e] ${consecutive ? "invisible" : ""}`}>
         {photo ? (
           <img src={photo} alt="" className="h-8 w-8 object-cover" />
@@ -142,7 +187,7 @@ function OutboundMessage({
   otherAgent?: boolean;
 }) {
   return (
-    <li className={`flex flex-col items-end ${consecutive ? "-mt-1.5" : ""}`}>
+    <li className={`hera-msg-in flex flex-col items-end ${consecutive ? "-mt-1.5" : ""}`}>
       <div
         className={`max-w-[min(100%,20.5rem)] rounded-[12px] rounded-br-none px-2 py-2 ${
           otherAgent ? "bg-[#757575]" : "bg-[#03234d]"
@@ -435,7 +480,15 @@ function isSameSpeaker(a: ChatItem | undefined, b: ChatItem | undefined) {
   );
 }
 
-function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartResponse | null }) {
+function Transcript({
+  items,
+  session,
+  typing = false,
+}: {
+  items: ChatItem[];
+  session: ChatStartResponse | null;
+  typing?: boolean;
+}) {
   return (
     <ul className="flex flex-col gap-3 px-3 py-3">
       {items.map((item, index) => {
@@ -458,6 +511,7 @@ function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartR
           </Fragment>
         );
       })}
+      {typing && <TypingBubble />}
     </ul>
   );
 }
@@ -472,6 +526,7 @@ export function SalesforceChat() {
   const [draft, setDraft] = useState("");
   const [items, setItems] = useState<ChatItem[]>(HERA_EMPTY_TRANSCRIPT);
   const [session, setSession] = useState<ChatStartResponse | null>(null);
+  const [typing, setTyping] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleId = useId();
@@ -499,7 +554,7 @@ export function SalesforceChat() {
     if (!visible) return;
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [visible, items.length, session]);
+  }, [visible, items.length, session, typing]);
 
   useEffect(() => {
     if (!visible) return;
@@ -536,8 +591,9 @@ export function SalesforceChat() {
   const send = async (e: FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text) return;
+    if (!text || typing) return;
     setDraft("");
+    setTyping(true);
     setItems((prev) => [
       ...prev,
       {
@@ -549,7 +605,10 @@ export function SalesforceChat() {
       },
     ]);
     try {
+      const started = Date.now();
       const result = await replyHera(text);
+      const wait = Math.max(0, 1800 - (Date.now() - started));
+      if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
       if (Array.isArray(result.items)) setItems(result.items as ChatItem[]);
       if (result.session) setSession(result.session);
     } catch {
@@ -562,6 +621,8 @@ export function SalesforceChat() {
           text: "No pude contactar el orquestador HERA. Reintenta el mensaje.",
         },
       ]);
+    } finally {
+      setTyping(false);
     }
   };
 
@@ -584,83 +645,101 @@ export function SalesforceChat() {
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f3f3]"
           >
-            <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#03234d] text-[9px] font-bold leading-6 text-white">
-              <span className="flex h-full w-full items-center justify-center">AH</span>
-              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-[#2e844a]" />
+            <span className="relative h-6 w-6 shrink-0">
+              <AgentAvatar size={24} typing={typing} />
             </span>
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[#03234d]">Agente HERA</span>
-            <span className="text-[10px] text-[#747474]">En línea</span>
+            <span className="text-[10px] text-[#747474]">{typing ? "Escribiendo…" : "En línea"}</span>
           </button>
         </div>
       )}
 
-      {visible && (
-        <section
-          id={panelId}
-          role="dialog"
-          aria-labelledby={titleId}
-          className="fixed bottom-[calc(3.15rem+env(safe-area-inset-bottom,0px))] left-2 z-[60] flex h-[min(34rem,calc(100dvh-7.5rem))] w-[min(100vw-1rem,25rem)] flex-col overflow-hidden rounded-t-lg border border-[#c9c9c9] border-b-0 bg-white shadow-[0_-12px_32px_rgba(3,35,77,0.18)] sm:left-6"
-        >
-          <header className="flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-white px-3 py-2">
-            <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#03234d] text-[11px] font-bold leading-8 text-white">
-              <span className="flex h-full w-full items-center justify-center">AH</span>
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#2e844a]" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 id={titleId} className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">
-                Chat · Agente HERA
-              </h2>
-              <p className="text-[10px] leading-[14px] text-[#747474]">MEM Healthcare · En línea</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setMinimized(true);
-              }}
-              className="flex h-7 w-7 items-center justify-center rounded text-[#706e6b] hover:bg-[#f3f3f3]"
-              aria-label="Minimizar chat"
-            >
-              <Minus className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={close}
-              className="flex h-7 w-7 items-center justify-center rounded text-[#706e6b] hover:bg-[#f3f3f3]"
-              aria-label="Cerrar chat"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </header>
-
-          <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto bg-white">
-            <Transcript items={items} session={session} />
-          </div>
-
-          <form onSubmit={(e) => void send(e)} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
-            <div className="flex items-end gap-1.5 rounded-md border border-[#c9c9c9] bg-white px-2 py-1.5 focus-within:border-[#0250d9]">
-              <textarea
-                ref={inputRef}
-                rows={1}
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={onComposerKey}
-                placeholder="Escribe un mensaje…"
-                aria-label="Escribe un mensaje"
-                className="max-h-24 min-h-[22px] flex-1 resize-none bg-transparent text-[13px] leading-[18px] text-[#2e2e2e] outline-none placeholder:text-[#747474]"
-              />
-              <button
-                type="submit"
-                disabled={!draft.trim()}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#0250d9] disabled:text-[#c9c9c9]"
-                aria-label="Enviar"
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed bottom-[calc(3.65rem+env(safe-area-inset-bottom,0px))] left-2 z-[60] w-[min(100vw-1rem,25rem)] sm:left-6"
+          >
+            <div className="relative pt-9">
+              <div className="pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2">
+                <span className="relative flex h-[72px] w-[72px] items-center justify-center rounded-full bg-white/80 p-1 shadow-[0_10px_24px_rgba(3,35,77,0.22)] ring-2 ring-white backdrop-blur-md">
+                  <AgentAvatar size={64} typing={typing} />
+                </span>
+              </div>
+              <section
+                id={panelId}
+                role="dialog"
+                aria-labelledby={titleId}
+                className={`relative z-10 flex h-[min(32rem,calc(100dvh-9rem))] w-full flex-col overflow-hidden rounded-[25px] border border-white/60 bg-white/65 shadow-[0_-12px_32px_rgba(3,35,77,0.16)] backdrop-blur-xl ${
+                  typing ? "hera-chat-typing" : ""
+                }`}
               >
-                <Send className="h-4 w-4" />
-              </button>
+                {typing && <span className="hera-chat-shimmer" aria-hidden="true" />}
+                <header className="relative z-10 flex shrink-0 items-center gap-2 border-b border-white/50 px-3 pb-2 pt-9">
+                  <div className="min-w-0 flex-1">
+                    <h2 id={titleId} className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">
+                      Chat · Agente HERA
+                    </h2>
+                    <p className="text-[10px] leading-[14px] text-[#747474]">
+                      {typing ? "Escribiendo…" : "MEM Healthcare · En línea"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setMinimized(true);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded text-[#706e6b] hover:bg-white/60"
+                    aria-label="Minimizar chat"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="flex h-7 w-7 items-center justify-center rounded text-[#706e6b] hover:bg-white/60"
+                    aria-label="Cerrar chat"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </header>
+
+                <div ref={scrollerRef} className="relative z-10 min-h-0 flex-1 overflow-y-auto bg-transparent">
+                  <Transcript items={items} session={session} typing={typing} />
+                </div>
+
+                <form onSubmit={(e) => void send(e)} className="relative z-10 shrink-0 border-t border-white/50 px-2 py-2">
+                  <div className="flex items-end gap-1.5 rounded-md border border-[#c9c9c9]/80 bg-white/75 px-2 py-1.5 focus-within:border-[#0250d9]">
+                    <textarea
+                      ref={inputRef}
+                      rows={1}
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={onComposerKey}
+                      disabled={typing}
+                      placeholder={typing ? "HERA está escribiendo…" : "Escribe un mensaje…"}
+                      aria-label="Escribe un mensaje"
+                      className="max-h-24 min-h-[22px] flex-1 resize-none bg-transparent text-[13px] leading-[18px] text-[#2e2e2e] outline-none placeholder:text-[#747474]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={typing || !draft.trim()}
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#0250d9] disabled:text-[#c9c9c9]"
+                      aria-label="Enviar"
+                    >
+                      {typing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </form>
+              </section>
             </div>
-          </form>
-        </section>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <button
         type="button"
