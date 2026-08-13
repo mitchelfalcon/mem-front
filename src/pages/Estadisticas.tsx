@@ -18,7 +18,6 @@ import {
 import { TrendingUp, TrendingDown, Activity, BedDouble, Timer, ShieldCheck } from "lucide-react";
 import { ConsoleLayout } from "../components/mem/ConsoleLayout";
 import { VideoStage } from "../components/mem/VideoStage";
-import { SLACK_CLIENT_URL } from "../lib/mem-slack";
 import {
   KPIS,
   ENDEMIC_CHANNEL,
@@ -268,18 +267,6 @@ export function Estadisticas() {
               </div>
             </Panel>
           </div>
-
-          <section className="mt-3 flex h-[calc(100dvh-8rem)] min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-lg">
-            <div className="flex shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 py-2">
-              <span className="text-sm font-bold text-mem-navy">Slack</span>
-            </div>
-            <iframe
-              src={SLACK_CLIENT_URL}
-              title="Slack"
-              className="h-full min-h-0 w-full flex-1 bg-white"
-              referrerPolicy="no-referrer-when-downgrade"
-            />
-          </section>
         </div>
       </VideoStage>
     </ConsoleLayout>

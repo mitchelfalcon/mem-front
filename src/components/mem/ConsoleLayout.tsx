@@ -1,6 +1,6 @@
 import { useState, useCallback, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, Play, Home as HomeIcon, Map, BarChart3, X } from "lucide-react";
+import { CheckCircle2, Play, Home as HomeIcon, Map, BarChart3, MessageSquare, X } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 
 const SIDEBAR_LABELS: Record<string, string> = {
@@ -13,6 +13,7 @@ const APPS = [
   { id: "home", label: "Home", icon: HomeIcon },
   { id: "mapas", label: "Mapas", icon: Map },
   { id: "estadisticas", label: "Estadísticas", icon: BarChart3 },
+  { id: "slack", label: "Slack", icon: MessageSquare },
 ];
 
 function go(hash: string) {
