@@ -27,6 +27,9 @@ interface VideoStageProps {
    * Same layering: background image (0) -> video (10) -> overlay (20).
    */
   immersive?: boolean;
+  /** Forwarded to VimeoEmbed so the iframe can receive clicks / Player API. */
+  interactive?: boolean;
+  iframeId?: string;
 }
 
 /**
@@ -46,6 +49,8 @@ export function VideoStage({
   className = "",
   contentClassName = "",
   immersive = false,
+  interactive = false,
+  iframeId,
 }: VideoStageProps) {
   if (immersive) {
     return (
@@ -60,7 +65,13 @@ export function VideoStage({
         />
         {/* Layer 2 — full-bleed cover video */}
         <div className="absolute inset-0" style={{ zIndex: 10 }}>
-          <VimeoEmbed videoId={videoId} title={title} cover />
+          <VimeoEmbed
+            videoId={videoId}
+            title={title}
+            cover
+            interactive={interactive}
+            iframeId={iframeId}
+          />
         </div>
         {/* Layer 3 — overlay components */}
         {children != null && (
@@ -92,7 +103,13 @@ export function VideoStage({
 
       {/* Layer 2 — background video */}
       <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
-        <VimeoEmbed videoId={videoId} title={title} fill />
+        <VimeoEmbed
+          videoId={videoId}
+          title={title}
+          fill
+          interactive={interactive}
+          iframeId={iframeId}
+        />
       </div>
 
       {/* Layer 3 — overlay components */}
