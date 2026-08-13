@@ -19,6 +19,7 @@ import { mutePresentationAudio } from "../../pages/Presentation";
 import { authorizeAwu, fetchHeraThread, replyHera, type ChatStartResponse } from "../../lib/mem-slack";
 
 const AVATARS: Record<string, string> = {
+  "Director Médico": drArmando,
   "Dr. Mike": drArmando,
 };
 
@@ -673,12 +674,14 @@ export function SalesforceChat() {
                 id={panelId}
                 role="dialog"
                 aria-labelledby={titleId}
-                className={`relative z-10 flex h-[min(32rem,calc(100dvh-9rem))] w-full flex-col overflow-hidden rounded-[25px] border border-white/60 bg-white/65 shadow-[0_-12px_32px_rgba(3,35,77,0.16)] backdrop-blur-xl ${
-                  typing ? "hera-chat-typing" : ""
-                }`}
+                className="relative z-10 flex h-[min(32rem,calc(100dvh-9rem))] w-full flex-col overflow-hidden rounded-[25px] border border-white/60 bg-white/65 shadow-[0_-12px_32px_rgba(3,35,77,0.16)] backdrop-blur-xl"
               >
-                {typing && <span className="hera-chat-shimmer" aria-hidden="true" />}
                 <header className="relative z-10 flex shrink-0 items-center gap-2 border-b border-white/50 px-3 pb-2 pt-9">
+                  <img
+                    src={drArmando}
+                    alt="Dr. Armando"
+                    className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-white/80"
+                  />
                   <div className="min-w-0 flex-1">
                     <h2 id={titleId} className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">
                       Chat · Agente HERA
@@ -713,7 +716,7 @@ export function SalesforceChat() {
                 </div>
 
                 <form onSubmit={(e) => void send(e)} className="relative z-10 shrink-0 border-t border-white/50 px-2 py-2">
-                  <div className="flex items-end gap-1.5 rounded-md border border-[#c9c9c9]/80 bg-white/75 px-2 py-1.5 focus-within:border-[#0250d9]">
+                  <div className="flex items-end gap-1.5 rounded-[25px] border border-[#c9c9c9]/80 bg-white/75 px-3 py-1.5 focus-within:border-[#0250d9]">
                     <textarea
                       ref={inputRef}
                       rows={1}

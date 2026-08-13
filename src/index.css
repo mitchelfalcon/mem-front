@@ -158,16 +158,6 @@
   }
 }
 
-@keyframes heraTypingGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(0, 122, 222, 0.16), 0 -12px 32px rgba(3, 35, 77, 0.16);
-  }
-  50% {
-    box-shadow: 0 0 28px 2px rgba(109, 59, 245, 0.24), 0 -12px 32px rgba(3, 35, 77, 0.16);
-  }
-}
-
 @keyframes heraTypingRing {
   0% {
     transform: scale(1);
@@ -179,21 +169,8 @@
   }
 }
 
-@keyframes heraShimmer {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(120%);
-  }
-}
-
 .hera-avatar-typing {
   animation: heraAvatarPulse 2.8s ease-in-out infinite;
-}
-
-.hera-chat-typing {
-  animation: heraTypingGlow 2.6s ease-in-out infinite;
 }
 
 .hera-typing-ring {
@@ -206,24 +183,6 @@
 }
 .hera-typing-ring-delay {
   animation-delay: 0.9s;
-}
-
-.hera-chat-shimmer {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  border-radius: inherit;
-}
-.hera-chat-shimmer::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 45%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-  animation: heraShimmer 2.8s ease-in-out infinite;
 }
 
 .hera-dot {
