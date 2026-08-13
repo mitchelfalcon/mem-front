@@ -3,16 +3,16 @@ import Player from "@vimeo/player";
 import { Volume2, VolumeX } from "lucide-react";
 import { VideoStage } from "../components/mem/VideoStage";
 
-const IFRAME_ID = "presentation-vimeo";
+export const PRESENTATION_VIMEO_ID = "presentation-vimeo";
 
-export function Presentation() {
+export function PresentationAudioButton() {
   const playerRef = useRef<Player | null>(null);
   const [soundOn, setSoundOn] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const getPlayer = () => {
     if (playerRef.current) return playerRef.current;
-    const iframe = document.getElementById(IFRAME_ID);
+    const iframe = document.getElementById(PRESENTATION_VIMEO_ID);
     if (!(iframe instanceof HTMLIFrameElement)) return null;
     playerRef.current = new Player(iframe);
     return playerRef.current;
@@ -40,25 +40,30 @@ export function Presentation() {
   };
 
   return (
+    <button
+      type="button"
+      onClick={toggleSound}
+      disabled={busy}
+      aria-pressed={soundOn}
+      aria-label={soundOn ? "Silenciar audio" : "Activar audio"}
+      className="inline-flex items-center gap-2 rounded-full border border-mem-blue/30 bg-mem-blue px-3 py-1.5 text-xs font-bold text-white shadow-md transition hover:bg-mem-blue-2 disabled:opacity-70 sm:px-4 sm:py-2 sm:text-sm"
+    >
+      {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+      {soundOn ? "Silenciar" : "Activar audio"}
+    </button>
+  );
+}
+
+export function Presentation() {
+  return (
     <div className="relative h-full w-full">
       <VideoStage
         videoId="1217024164"
         title="Firefly genera una portada interactiva render 8k"
         immersive
         interactive
-        iframeId={IFRAME_ID}
+        iframeId={PRESENTATION_VIMEO_ID}
       />
-      <button
-        type="button"
-        onClick={toggleSound}
-        disabled={busy}
-        aria-pressed={soundOn}
-        aria-label={soundOn ? "Silenciar audio" : "Activar audio"}
-        className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/90 px-3 py-2 text-xs font-semibold text-mem-navy shadow-lg backdrop-blur-md transition hover:bg-white disabled:opacity-70 sm:bottom-5 sm:right-5 sm:px-4 sm:py-2.5 sm:text-sm"
-      >
-        {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-        {soundOn ? "Silenciar" : "Activar audio"}
-      </button>
     </div>
   );
 }

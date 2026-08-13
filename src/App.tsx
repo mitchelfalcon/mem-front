@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Presentation } from "./pages/Presentation";
+import { Presentation, PresentationAudioButton } from "./pages/Presentation";
 import { Home } from "./pages/Home";
 import { Mapas } from "./pages/Mapas";
 import { Estadisticas } from "./pages/Estadisticas";
@@ -51,7 +51,11 @@ export default function App() {
             <img src={memLogo} alt="MEM Healthcare" className="h-8 w-auto sm:h-12" />
           </button>
 
-          {isConsole && (
+          {page === "presentation" ? (
+            <div className="ml-auto shrink-0">
+              <PresentationAudioButton />
+            </div>
+          ) : (
             <div className="ml-auto hidden shrink-0 lg:flex">
               <ConsoleIcons />
             </div>
