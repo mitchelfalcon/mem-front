@@ -1,4 +1,5 @@
 import { Fragment, type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { Check, Loader2, Minus, Send, X } from "lucide-react";
 import chatIcon from "../../assets/slds-chat/chat.svg";
 import endChatIcon from "../../assets/slds-chat/end-chat.svg";
@@ -27,6 +28,48 @@ function SldsIcon({ src, size = 16, alt = "" }: { src: string; size?: number; al
     <span className="inline-flex shrink-0 overflow-clip" style={{ width: size, height: size }} aria-hidden={alt ? undefined : true}>
       <img src={src} alt={alt} width={size} height={size} className="h-full w-full object-contain" />
     </span>
+  );
+}
+
+function AgentAvatar({ size, typing = false }: { size: number; typing?: boolean }) {
+  return (
+    <span className="relative shrink-0" style={{ width: size, height: size }}>
+      <span
+        className={`flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-[#03234d] text-white ${
+          typing ? "hera-avatar-typing" : ""
+        }`}
+        style={{ fontSize: Math.max(9, Math.round(size * 0.34)), fontWeight: 700 }}
+      >
+        {typing ? (
+          <span className="flex items-center gap-0.5 px-1">
+            <span className="hera-dot" />
+            <span className="hera-dot" />
+            <span className="hera-dot" />
+          </span>
+        ) : (
+          "AH"
+        )}
+      </span>
+      <span
+        className={`absolute bottom-0 right-0 rounded-full border-2 border-white ${
+          typing ? "bg-amber-400" : "bg-[#2e844a]"
+        }`}
+        style={{ width: size * 0.28, height: size * 0.28 }}
+      />
+    </span>
+  );
+}
+
+function TypingBubble() {
+  return (
+    <li className="hera-msg-in flex flex-col items-end">
+      <div className="flex items-center gap-1 rounded-[12px] rounded-br-none bg-[#03234d] px-3 py-2.5">
+        <span className="hera-dot" />
+        <span className="hera-dot" />
+        <span className="hera-dot" />
+      </div>
+      <p className="pt-0.5 text-[10px] leading-[14px] text-[#747474]">Agente HERA • escribiendo</p>
+    </li>
   );
 }
 
@@ -108,7 +151,7 @@ function InboundMessage({
 }) {
   const photo = item.avatar ?? AVATARS[item.name];
   return (
-    <li className={`flex items-end gap-2 ${consecutive ? "-mt-1.5" : ""}`}>
+    <li className={`hera-msg-in flex items-end gap-2 ${consecutive ? "-mt-1.5" : ""}`}>
       <span className={`h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#f3f3f3] text-[11px] font-semibold leading-8 text-[#2e2e2e] ${consecutive ? "invisible" : ""}`}>
         {photo ? (
           <img src={photo} alt="" className="h-8 w-8 object-cover" />
@@ -142,7 +185,7 @@ function OutboundMessage({
   otherAgent?: boolean;
 }) {
   return (
-    <li className={`flex flex-col items-end ${consecutive ? "-mt-1.5" : ""}`}>
+    <li className={`hera-msg-in flex flex-col items-end ${consecutive ? "-mt-1.5" : ""}`}>
       <div
         className={`max-w-[min(100%,20.5rem)] rounded-[12px] rounded-br-none px-2 py-2 ${
           otherAgent ? "bg-[#757575]" : "bg-[#03234d]"
@@ -435,7 +478,15 @@ function isSameSpeaker(a: ChatItem | undefined, b: ChatItem | undefined) {
   );
 }
 
-function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartResponse | null }) {
+function Transcript({
+  items,
+  session,
+  typing = false,
+}: {
+  items: ChatItem[];
+  session: ChatStartResponse | null;
+  typing?: boolean;
+}) {
   return (
     <ul className="flex flex-col gap-3 px-3 py-3">
       {items.map((item, index) => {
@@ -458,6 +509,7 @@ function Transcript({ items, session }: { items: ChatItem[]; session: ChatStartR
           </Fragment>
         );
       })}
+      {typing && <TypingBubble />}
     </ul>
   );
 }
@@ -472,6 +524,7 @@ export function SalesforceChat() {
   const [draft, setDraft] = useState("");
   const [items, setItems] = useState<ChatItem[]>(HERA_EMPTY_TRANSCRIPT);
   const [session, setSession] = useState<ChatStartResponse | null>(null);
+  const [typing, setTyping] = useState(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const titleId = useId();
@@ -499,7 +552,7 @@ export function SalesforceChat() {
     if (!visible) return;
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [visible, items.length, session]);
+  }, [visible, items.length, session, typing]);
 
   useEffect(() => {
     if (!visible) return;
@@ -536,8 +589,9 @@ export function SalesforceChat() {
   const send = async (e: FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text) return;
+    if (!text || typing) return;
     setDraft("");
+    setTyping(true);
     setItems((prev) => [
       ...prev,
       {
@@ -549,7 +603,10 @@ export function SalesforceChat() {
       },
     ]);
     try {
+      const started = Date.now();
       const result = await replyHera(text);
+      const wait = Math.max(0, 700 - (Date.now() - started));
+      if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
       if (Array.isArray(result.items)) setItems(result.items as ChatItem[]);
       if (result.session) setSession(result.session);
     } catch {
@@ -562,6 +619,8 @@ export function SalesforceChat() {
           text: "No pude contactar el orquestador HERA. Reintenta el mensaje.",
         },
       ]);
+    } finally {
+      setTyping(false);
     }
   };
 
@@ -584,33 +643,40 @@ export function SalesforceChat() {
             }}
             className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f3f3]"
           >
-            <span className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#03234d] text-[9px] font-bold leading-6 text-white">
-              <span className="flex h-full w-full items-center justify-center">AH</span>
-              <span className="absolute bottom-0 right-0 h-2 w-2 rounded-full border border-white bg-[#2e844a]" />
+            <span className="relative h-6 w-6 shrink-0">
+              <AgentAvatar size={24} typing={typing} />
             </span>
             <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-[#03234d]">Agente HERA</span>
-            <span className="text-[10px] text-[#747474]">En línea</span>
+            <span className="text-[10px] text-[#747474]">{typing ? "Escribiendo…" : "En línea"}</span>
           </button>
         </div>
       )}
 
+      <AnimatePresence>
       {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.98 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="hera-chat-shell fixed bottom-[calc(3.15rem+env(safe-area-inset-bottom,0px))] left-2 z-[60] h-[min(34rem,calc(100dvh-7.5rem))] w-[min(100vw-1rem,25rem)] shadow-[0_-12px_32px_rgba(3,35,77,0.18)] sm:left-6"
+        >
+          <div className="hera-chat-shell-spin" aria-hidden="true" />
         <section
           id={panelId}
           role="dialog"
           aria-labelledby={titleId}
-          className="fixed bottom-[calc(3.15rem+env(safe-area-inset-bottom,0px))] left-2 z-[60] flex h-[min(34rem,calc(100dvh-7.5rem))] w-[min(100vw-1rem,25rem)] flex-col overflow-hidden rounded-t-lg border border-[#c9c9c9] border-b-0 bg-white shadow-[0_-12px_32px_rgba(3,35,77,0.18)] sm:left-6"
+          className="relative z-10 flex h-full w-full flex-col overflow-hidden rounded-t-[12px] bg-white"
         >
           <header className="flex shrink-0 items-center gap-2 border-b border-[#e5e5e5] bg-white px-3 py-2">
-            <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#03234d] text-[11px] font-bold leading-8 text-white">
-              <span className="flex h-full w-full items-center justify-center">AH</span>
-              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-[#2e844a]" />
-            </span>
+            <AgentAvatar size={32} typing={typing} />
             <div className="min-w-0 flex-1">
               <h2 id={titleId} className="truncate text-[13px] font-semibold leading-[18px] text-[#03234d]">
                 Chat · Agente HERA
               </h2>
-              <p className="text-[10px] leading-[14px] text-[#747474]">MEM Healthcare · En línea</p>
+              <p className="text-[10px] leading-[14px] text-[#747474]">
+                {typing ? "Escribiendo…" : "MEM Healthcare · En línea"}
+              </p>
             </div>
             <button
               type="button"
@@ -634,7 +700,7 @@ export function SalesforceChat() {
           </header>
 
           <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto bg-white">
-            <Transcript items={items} session={session} />
+            <Transcript items={items} session={session} typing={typing} />
           </div>
 
           <form onSubmit={(e) => void send(e)} className="shrink-0 border-t border-[#e5e5e5] bg-white px-2 py-2">
@@ -645,22 +711,25 @@ export function SalesforceChat() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={onComposerKey}
-                placeholder="Escribe un mensaje…"
+                disabled={typing}
+                placeholder={typing ? "HERA está escribiendo…" : "Escribe un mensaje…"}
                 aria-label="Escribe un mensaje"
                 className="max-h-24 min-h-[22px] flex-1 resize-none bg-transparent text-[13px] leading-[18px] text-[#2e2e2e] outline-none placeholder:text-[#747474]"
               />
               <button
                 type="submit"
-                disabled={!draft.trim()}
+                disabled={typing || !draft.trim()}
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[#0250d9] disabled:text-[#c9c9c9]"
                 aria-label="Enviar"
               >
-                <Send className="h-4 w-4" />
+                {typing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               </button>
             </div>
           </form>
         </section>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       <button
         type="button"

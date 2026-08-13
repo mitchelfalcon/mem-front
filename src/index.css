@@ -135,6 +135,82 @@
   animation: ekgDash 8s linear infinite;
 }
 
+@keyframes heraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes heraDot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes heraAvatarPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 122, 222, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(109, 59, 245, 0);
+  }
+}
+
+.hera-chat-shell {
+  position: relative;
+  overflow: hidden;
+  padding: 2px;
+  border-radius: 14px 14px 0 0;
+}
+
+.hera-chat-shell-spin {
+  position: absolute;
+  inset: -60%;
+  background: conic-gradient(from 0deg, #007ade, #6d3bf5, #22d3ee, #007ade 75%, #6d3bf5);
+  animation: heraSpin 5s linear infinite;
+}
+
+.hera-avatar-typing {
+  animation: heraAvatarPulse 1.4s ease-in-out infinite;
+}
+
+.hera-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #fff;
+  animation: heraDot 1.05s ease-in-out infinite;
+}
+.hera-dot:nth-child(2) {
+  animation-delay: 0.14s;
+}
+.hera-dot:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.hera-msg-in {
+  animation: heraMsgIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes heraMsgIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
